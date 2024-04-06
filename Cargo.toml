@@ -1,0 +1,23 @@
+[workspace]
+default-members = ["crates/*", "tools/*"]
+members = ["crates/*", "app", "tools/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+aligned-vec = { version = "0.5.0", default-features = false, features = ["serde"] }
+bitflags = { version = "2.4.1", default-features = false, features = ["serde"] }
+bytemuck = { version = "1.14.0", features = ["must_cast"] }
+postcard = { version = "1.0.8", features = ["alloc"] }
+serde = { version = "1.0.189", default-features = false }
+thiserror = "1.0.49"
+uninit = { version = "0.6.2", default-features = false }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+panic = "abort"

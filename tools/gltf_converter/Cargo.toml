@@ -1,0 +1,20 @@
+[package]
+name = "gltf_converter"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+jc2_file_formats = { path = "../../crates/file_formats" }
+
+aligned-vec = { workspace = true }
+bytemuck = { workspace = true }
+postcard = { workspace = true }
+thiserror = { workspace = true }
+
+clap = { version = "4.4.6", features = ["derive"] }
+gltf = { version = "1.3.0", features = ["KHR_materials_unlit"] }
+image = { version = "0.25.1", default-features = false }
+imagequant = { version = "4.2.2", default-features = false }
+itertools = { version = "0.12.0" }
+rgb = { version = "0.8.37" }
+texpresso = { version = "2.0.1" }
