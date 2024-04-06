@@ -4,6 +4,8 @@ version = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
+jc2_hashing = { path = "../hashing" }
+
 aligned-vec = { workspace = true }
 bitflags = { workspace = true }
 postcard = { workspace = true }

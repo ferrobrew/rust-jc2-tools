@@ -1474,6 +1474,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32b13ea120a812beba79e34316b3942a857c86ec1593cb34f27bb28272ce2cca"
 
 [[package]]
+name = "const_for"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b8f6a54c8d1baf6422c062a7b8be16f47d1071989219da6a369b23a934801c8"
+
+[[package]]
 name = "const_panic"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2321,8 +2327,17 @@ version = "0.1.0"
 dependencies = [
  "aligned-vec",
  "bitflags 2.5.0",
+ "jc2_hashing",
  "postcard",
  "serde",
+]
+
+[[package]]
+name = "jc2_hashing"
+version = "0.1.0"
+dependencies = [
+ "const_for",
+ "static_assertions",
 ]
 
 [[package]]

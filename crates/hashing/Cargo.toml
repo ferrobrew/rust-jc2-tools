@@ -1,0 +1,8 @@
+[package]
+name = "jc2_hashing"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+const_for = "0.1"
+static_assertions = { workspace = true }
