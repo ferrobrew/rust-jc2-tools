@@ -5,4 +5,6 @@ edition = { workspace = true }
 
 [dependencies]
 const_for = "0.1"
+
+paste = { workspace = true }
 static_assertions = { workspace = true }
