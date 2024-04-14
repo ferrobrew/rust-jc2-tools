@@ -6,7 +6,7 @@ edition = { workspace = true }
 [dependencies]
 jc2_hashing = { path = "../hashing" }
 
-aligned-vec = { workspace = true }
+binrw = { workspace = true }
 bitflags = { workspace = true }
-postcard = { workspace = true }
-serde = { workspace = true }
+num-traits = { workspace = true }
+thiserror = { workspace = true }

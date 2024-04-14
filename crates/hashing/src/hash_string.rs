@@ -1,7 +1,10 @@
 use std::path::Path;
 
+use binrw::binrw;
+
 use super::hash_little32;
 
+#[binrw]
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct HashString(u32);
 
