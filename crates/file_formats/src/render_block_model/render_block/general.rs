@@ -10,7 +10,8 @@ use crate::{
 #[brw(repr = u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub enum GeneralVersion {
-    V2 = 2,
+    V1 = 1,
+    V2,
     #[default]
     V3,
 }
