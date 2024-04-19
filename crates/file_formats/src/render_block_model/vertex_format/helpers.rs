@@ -3,18 +3,14 @@ use std::ops::{Deref, DerefMut};
 use binrw::{BinRead, BinWrite};
 use num_traits::{AsPrimitive, Unsigned};
 
-use crate::render_block_model::{RenderBlockError, VertexFormat};
+use crate::render_block_model::RenderBlockError;
 
 pub trait Vertex:
-    Clone + for<'a> BinRead<Args<'a> = (VertexFormat,)> + for<'b> BinWrite<Args<'b> = (VertexFormat,)>
+    Clone + for<'a> BinRead<Args<'a> = Self::VertexArgs> + for<'b> BinWrite<Args<'b> = Self::VertexArgs>
+where
+    Self::VertexArgs: Clone,
 {
-}
-
-impl<T> Vertex for T where
-    T: Clone
-        + for<'a> BinRead<Args<'a> = (VertexFormat,)>
-        + for<'b> BinWrite<Args<'b> = (VertexFormat,)>
-{
+    type VertexArgs;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -37,7 +33,7 @@ impl<T: Vertex> DerefMut for Vertices<T> {
 }
 
 impl<T: Vertex> BinRead for Vertices<T> {
-    type Args<'a> = (VertexFormat,);
+    type Args<'a> = T::VertexArgs;
 
     #[inline]
     fn read_options<R: std::io::prelude::Read + std::io::prelude::Seek>(
@@ -48,14 +44,14 @@ impl<T: Vertex> BinRead for Vertices<T> {
         let length = u32::read_options(reader, endian, ())?;
         let mut vertices = Vec::with_capacity(length as usize);
         for _ in 0..length {
-            vertices.push(T::read_options(reader, endian, args)?);
+            vertices.push(T::read_options(reader, endian, args.clone())?);
         }
         Ok(Self(vertices))
     }
 }
 
 impl<T: Vertex> BinWrite for Vertices<T> {
-    type Args<'a> = (VertexFormat,);
+    type Args<'a> = T::VertexArgs;
 
     #[inline]
     fn write_options<W: std::io::prelude::Write + std::io::prelude::Seek>(
@@ -69,7 +65,7 @@ impl<T: Vertex> BinWrite for Vertices<T> {
         if let Ok(length) = u32::try_from(self.len()) {
             length.write_options(writer, endian, ())?;
             for vertex in self.iter() {
-                vertex.write_options(writer, endian, args)?;
+                vertex.write_options(writer, endian, args.clone())?;
             }
             Ok(())
         } else {

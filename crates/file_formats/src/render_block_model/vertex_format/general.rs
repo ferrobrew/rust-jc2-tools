@@ -8,7 +8,7 @@ use crate::{
     render_block_model::{PackedNormal, PackedPosition, PackedRGBA, PackedUV, VertexFormat},
 };
 
-use super::GenericVertex;
+use super::{GenericVertex, Vertex};
 
 #[repr(C)]
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -19,6 +19,10 @@ pub struct GeneralVertex {
     pub normal: Vec3<f32>,
     pub tangent: Vec3<f32>,
     pub color: Vec4<f32>,
+}
+
+impl Vertex for GeneralVertex {
+    type VertexArgs = (VertexFormat,);
 }
 
 impl BinRead for GeneralVertex {
