@@ -11,7 +11,7 @@ use crate::{
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub enum CarPaintSimpleVersion {
     #[default]
-    V1,
+    V1 = 1,
 }
 
 bitflags! {

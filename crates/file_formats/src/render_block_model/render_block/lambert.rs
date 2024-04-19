@@ -8,8 +8,7 @@ use crate::render_block_model::{GeneralVertex, Indices, VertexInfo, Vertices};
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub enum LambertVersion {
     V0,
-    V1, // TODO: not sure this exists in the wild
-    V2,
+    V2 = 2,
     V3,
     #[default]
     V4,
