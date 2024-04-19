@@ -33,7 +33,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct LambertAttributes {
     pub vertex_info: VertexInfo,
     pub flags: LambertFlags,
@@ -42,9 +42,23 @@ pub struct LambertAttributes {
     pub ambient_occlusion_channel: u8,
 }
 
+impl Default for LambertAttributes {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            vertex_info: Default::default(),
+            flags: LambertFlags::USE_DYNAMIC_LIGHTS,
+            depth_bias: 0.0,
+            texture_channel: 0,
+            ambient_occlusion_channel: 0,
+        }
+    }
+}
+
 impl BinRead for LambertAttributes {
     type Args<'a> = (&'a LambertVersion,);
 
+    #[inline]
     fn read_options<R: std::io::prelude::Read + std::io::prelude::Seek>(
         reader: &mut R,
         endian: binrw::Endian,
@@ -79,6 +93,7 @@ impl BinRead for LambertAttributes {
 impl BinWrite for LambertAttributes {
     type Args<'a> = (&'a LambertVersion,);
 
+    #[inline]
     fn write_options<W: std::io::prelude::Write + std::io::prelude::Seek>(
         &self,
         writer: &mut W,

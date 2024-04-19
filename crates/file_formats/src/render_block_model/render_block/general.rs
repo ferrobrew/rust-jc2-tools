@@ -40,7 +40,7 @@ bitflags! {
 #[brw(import(
     version: &GeneralVersion
 ))]
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct GeneralAttributes {
     pub channel_mask: Vec4<f32>,
     pub channel_ambient_occlusion_mask: Vec4<f32>,
@@ -49,6 +49,20 @@ pub struct GeneralAttributes {
     #[brw(args(matches!(version, GeneralVersion::V3)))]
     pub vertex_info: VertexInfo,
     pub flags: GeneralFlags,
+}
+
+impl Default for GeneralAttributes {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            channel_mask: Vec4::splat(0.0),
+            channel_ambient_occlusion_mask: Vec4::splat(0.0),
+            depth_bias: 0.0,
+            specular_power: 16.0,
+            vertex_info: Default::default(),
+            flags: GeneralFlags::USE_SNOW_FLAG,
+        }
+    }
 }
 
 #[binrw]
