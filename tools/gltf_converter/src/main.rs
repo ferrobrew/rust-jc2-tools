@@ -64,12 +64,12 @@ type AccessorIndex = gltf_json::Index<gltf_json::Accessor>;
 fn create_accessor(
     root: &mut GltfRoot,
     primitive: &mut MeshPrimitive,
-    buffer_view: BufferViewIndex,
+    buffer_view_index: BufferViewIndex,
     accessor_type: AccessorType,
     mesh_semantic: MeshSemantic,
     byte_offset: usize,
 ) -> Option<AccessorIndex> {
-    if let Some(buffer_view) = root.get(buffer_view) {
+    if let Some(buffer_view) = root.get(buffer_view_index) {
         let count = {
             let mut length = buffer_view.byte_length.0;
             if let Some(offset) = buffer_view.byte_offset {
@@ -81,7 +81,7 @@ fn create_accessor(
             length
         };
         let accessor = root.push(Accessor {
-            buffer_view: Some(gltf_json::Index::new(0)),
+            buffer_view: Some(buffer_view_index),
             byte_offset: Some(byte_offset.into()),
             count: count.into(),
             component_type: Checked::Valid(gltf_json::accessor::GenericComponentType(
@@ -113,12 +113,13 @@ type AccessorComponentType = gltf_json::accessor::ComponentType;
 fn create_index_accessor(
     root: &mut GltfRoot,
     primitive: &mut MeshPrimitive,
-    buffer_view: BufferViewIndex,
+    buffer_view_index: BufferViewIndex,
     component_type: AccessorComponentType,
 ) -> Option<AccessorIndex> {
-    if let Some(buffer_view) = root.get(buffer_view) {
+    if let Some(buffer_view) = root.get(buffer_view_index) {
         let count = {
             let mut length = buffer_view.byte_length.0;
+            // TODO: can probably go
             if let Some(offset) = buffer_view.byte_offset {
                 length -= offset.0;
             }
@@ -128,7 +129,7 @@ fn create_index_accessor(
             length
         };
         let accessor = root.push(Accessor {
-            buffer_view: Some(gltf_json::Index::new(0)),
+            buffer_view: Some(buffer_view_index),
             byte_offset: Some(USize64(0)),
             count: count.into(),
             component_type: Checked::Valid(gltf_json::accessor::GenericComponentType(
@@ -151,7 +152,7 @@ fn create_index_accessor(
 }
 
 fn main() -> anyhow::Result<()> {
-    let sharkatron_rbm = include_bytes!("../res/goldassault/wea00_lod1-a1.rbm") as &[u8];
+    let sharkatron_rbm = include_bytes!("../res/statictram/v110_lod1-body.rbm") as &[u8];
     let rbm = RenderBlockModel::read(&mut Cursor::new(sharkatron_rbm))?;
 
     let mut root = gltf_json::Root::default();
@@ -262,6 +263,9 @@ fn main() -> anyhow::Result<()> {
         skin: Default::default(),
         weights: Default::default(),
     });
+
+    let writer = std::fs::File::create("Test.gltf")?;
+    gltf_json::serialize::to_writer_pretty(writer, &root)?;
 
     Ok(())
 }
