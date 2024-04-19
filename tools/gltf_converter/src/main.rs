@@ -237,7 +237,7 @@ fn main() -> anyhow::Result<()> {
 
                 primitives.push(primitive);
             }
-            RenderBlock::Lambert(_) => todo!(),
+            _ => todo!(),
         }
     }
 

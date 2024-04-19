@@ -4,6 +4,9 @@ use binrw::{binrw, BinRead, BinWrite};
 
 use super::RenderBlockError;
 
+mod car_paint_simple;
+pub use car_paint_simple::*;
+
 mod general;
 pub use general::*;
 
@@ -50,9 +53,9 @@ pub enum RenderBlock {
     // #[brw(magic(3448970869u32))]
     // CarPaint(CarPaintRenderBlock),
 
-    // /// HashString::from_str("CarPaintSimple")
-    // #[brw(magic(2173928592u32))]
-    // CarPaintSimple(CarPaintSimpleRenderBlock),
+    /// HashString::from_str("CarPaintSimple")
+    #[brw(magic(2173928592u32))]
+    CarPaintSimple(CarPaintSimpleRenderBlock),
 
     // /// HashString::from_str("CirrusClouds")
     // #[brw(magic(877238411u32))]
