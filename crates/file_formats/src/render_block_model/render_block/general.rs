@@ -3,7 +3,7 @@ use bitflags::bitflags;
 
 use crate::{
     math::Vec4,
-    render_block_model::{GeneralVertex, Indices, Material, VertexInfo, Vertices},
+    render_block_model::{GeneralVertex, IndexBuffer, Material, VertexBuffer, VertexInfo},
 };
 
 #[binrw]
@@ -73,7 +73,7 @@ pub struct GeneralRenderBlock {
     pub attributes: GeneralAttributes,
     pub material: Material,
     #[brw(args(attributes.vertex_info.format))]
-    pub vertices: Vertices<GeneralVertex>,
+    pub vertices: VertexBuffer<GeneralVertex>,
     #[brw(args(vertices.len()))]
-    pub indices: Indices<u16>,
+    pub indices: IndexBuffer<u16>,
 }

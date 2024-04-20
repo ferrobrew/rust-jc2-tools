@@ -1,7 +1,7 @@
 use binrw::{binrw, BinRead, BinWrite};
 use bitflags::bitflags;
 
-use crate::render_block_model::{GeneralVertex, Indices, VertexInfo, Vertices};
+use crate::render_block_model::{GeneralVertex, IndexBuffer, VertexBuffer, VertexInfo};
 
 #[binrw]
 #[brw(repr = u8)]
@@ -130,7 +130,7 @@ pub struct LambertRenderBlock {
     #[brw(args(&version))]
     pub attributes: LambertAttributes,
     #[brw(args(attributes.vertex_info.format))]
-    pub vertices: Vertices<GeneralVertex>,
+    pub vertices: VertexBuffer<GeneralVertex>,
     #[brw(args(vertices.len()))]
-    pub indices: Indices<u16>,
+    pub indices: IndexBuffer<u16>,
 }

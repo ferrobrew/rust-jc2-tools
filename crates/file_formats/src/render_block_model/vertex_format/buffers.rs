@@ -14,9 +14,9 @@ where
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Vertices<T: Vertex>(Vec<T>);
+pub struct VertexBuffer<T: Vertex>(Vec<T>);
 
-impl<T: Vertex> Deref for Vertices<T> {
+impl<T: Vertex> Deref for VertexBuffer<T> {
     type Target = Vec<T>;
 
     #[inline]
@@ -25,14 +25,14 @@ impl<T: Vertex> Deref for Vertices<T> {
     }
 }
 
-impl<T: Vertex> DerefMut for Vertices<T> {
+impl<T: Vertex> DerefMut for VertexBuffer<T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T: Vertex> BinRead for Vertices<T> {
+impl<T: Vertex> BinRead for VertexBuffer<T> {
     type Args<'a> = T::VertexArgs;
 
     #[inline]
@@ -50,7 +50,7 @@ impl<T: Vertex> BinRead for Vertices<T> {
     }
 }
 
-impl<T: Vertex> BinWrite for Vertices<T> {
+impl<T: Vertex> BinWrite for VertexBuffer<T> {
     type Args<'a> = T::VertexArgs;
 
     #[inline]
@@ -88,9 +88,9 @@ impl<T> Index for T where
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Indices<T: Index>(Vec<T>);
+pub struct IndexBuffer<T: Index>(Vec<T>);
 
-impl<T: Index> Deref for Indices<T> {
+impl<T: Index> Deref for IndexBuffer<T> {
     type Target = Vec<T>;
 
     #[inline]
@@ -99,7 +99,7 @@ impl<T: Index> Deref for Indices<T> {
     }
 }
 
-impl<T: Index> DerefMut for Indices<T> {
+impl<T: Index> DerefMut for IndexBuffer<T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
@@ -108,7 +108,7 @@ impl<T: Index> DerefMut for Indices<T> {
 
 type BinError = binrw::Error;
 
-impl<T: Index + AsPrimitive<usize>> BinRead for Indices<T> {
+impl<T: Index + AsPrimitive<usize>> BinRead for IndexBuffer<T> {
     type Args<'a> = (usize,);
 
     #[inline]
@@ -133,7 +133,7 @@ impl<T: Index + AsPrimitive<usize>> BinRead for Indices<T> {
     }
 }
 
-impl<T: Index + AsPrimitive<usize>> BinWrite for Indices<T> {
+impl<T: Index + AsPrimitive<usize>> BinWrite for IndexBuffer<T> {
     type Args<'a> = (usize,);
 
     #[inline]
