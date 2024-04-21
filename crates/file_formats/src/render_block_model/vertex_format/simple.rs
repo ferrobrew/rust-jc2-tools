@@ -11,10 +11,16 @@ use super::{GenericVertex, Vertex};
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SimpleVertex {
     pub position: Vec3<f32>,
-    pub normal: PackedNormalF32,
+    #[br(map = PackedNormalF32::into)]
+    #[bw(map = |x| PackedNormalF32::from(*x))]
+    pub normal: Vec3<f32>,
     pub uv0: Vec2<f32>,
-    pub tangent: PackedNormalF32,
-    pub binormal: PackedNormalF32,
+    #[br(map = PackedNormalF32::into)]
+    #[bw(map = |x| PackedNormalF32::from(*x))]
+    pub tangent: Vec3<f32>,
+    #[br(map = PackedNormalF32::into)]
+    #[bw(map = |x| PackedNormalF32::from(*x))]
+    pub binormal: Vec3<f32>,
 }
 
 impl Vertex for SimpleVertex {
@@ -33,10 +39,10 @@ impl From<SimpleVertex> for GenericVertex {
     fn from(value: SimpleVertex) -> Self {
         Self {
             position: value.position,
-            normal: value.normal.into(),
+            normal: value.normal,
             uv0: value.uv0,
-            tangent: value.tangent.into(),
-            binormal: value.binormal.into(),
+            tangent: value.tangent,
+            binormal: value.binormal,
             ..Default::default()
         }
     }
