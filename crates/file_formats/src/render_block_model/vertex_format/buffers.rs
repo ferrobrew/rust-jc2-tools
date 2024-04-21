@@ -5,8 +5,7 @@ use num_traits::{AsPrimitive, Unsigned};
 
 use crate::render_block_model::RenderBlockError;
 
-pub trait Vertex:
-    Clone + for<'a> BinRead<Args<'a> = Self::VertexArgs> + for<'b> BinWrite<Args<'b> = Self::VertexArgs>
+pub trait Vertex: Clone
 where
     Self::VertexArgs: Clone,
 {
@@ -14,7 +13,7 @@ where
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct VertexBuffer<T: Vertex>(Vec<T>);
+pub struct VertexBuffer<T: Vertex>(pub(crate) Vec<T>);
 
 impl<T: Vertex> Deref for VertexBuffer<T> {
     type Target = Vec<T>;
@@ -32,7 +31,10 @@ impl<T: Vertex> DerefMut for VertexBuffer<T> {
     }
 }
 
-impl<T: Vertex> BinRead for VertexBuffer<T> {
+impl<T: Vertex> BinRead for VertexBuffer<T>
+where
+    T: for<'a> BinRead<Args<'a> = T::VertexArgs> + for<'b> BinWrite<Args<'b> = T::VertexArgs>,
+{
     type Args<'a> = T::VertexArgs;
 
     #[inline]
@@ -50,7 +52,10 @@ impl<T: Vertex> BinRead for VertexBuffer<T> {
     }
 }
 
-impl<T: Vertex> BinWrite for VertexBuffer<T> {
+impl<T: Vertex> BinWrite for VertexBuffer<T>
+where
+    T: for<'a> BinRead<Args<'a> = T::VertexArgs> + for<'b> BinWrite<Args<'b> = T::VertexArgs>,
+{
     type Args<'a> = T::VertexArgs;
 
     #[inline]

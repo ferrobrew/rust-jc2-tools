@@ -2,10 +2,10 @@ use binrw::{binrw, BinRead, BinWrite};
 
 use crate::{
     math::{Vec2, Vec3},
-    render_block_model::PackedNormalU32,
+    render_block_model::{PackedNormalU32, RenderBlockError},
 };
 
-use super::{GenericVertex, Vertex};
+use super::{GenericVertex, Vertex, VertexBuffer};
 
 #[repr(C)]
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -13,10 +13,84 @@ pub struct SkinnedVertex {
     pub position: Vec3<f32>,
     pub bone_weights: [u8; 8],
     pub bone_indices: [u8; 8],
-    pub normal: PackedNormalU32,
-    pub tangent: PackedNormalU32,
-    pub binormal: PackedNormalU32,
+    pub normal: Vec3<f32>,
+    pub tangent: Vec3<f32>,
+    pub binormal: Vec3<f32>,
     pub uv0: Vec2<f32>,
+}
+
+impl Vertex for SkinnedVertex {
+    type VertexArgs = (bool,);
+}
+
+type BinError = binrw::Error;
+type SkinnedPositions = VertexBuffer<SkinnedVertexPosition>;
+type SkinnedData = VertexBuffer<SkinnedVertexData>;
+
+impl BinRead for VertexBuffer<SkinnedVertex> {
+    type Args<'a> = <SkinnedVertex as Vertex>::VertexArgs;
+
+    #[inline]
+    fn read_options<R: std::io::prelude::Read + std::io::prelude::Seek>(
+        reader: &mut R,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::prelude::BinResult<Self> {
+        let positions = SkinnedPositions::read_options(reader, endian, args)?;
+        let datas = SkinnedData::read_options(reader, endian, ())?;
+
+        if positions.len() == datas.len() {
+            let mut vertices = Vec::with_capacity(positions.len());
+            for (position, data) in positions.iter().zip(datas.iter()) {
+                vertices.push(SkinnedVertex {
+                    position: position.position,
+                    bone_weights: position.bone_weights,
+                    bone_indices: position.bone_indices,
+                    normal: data.normal.into(),
+                    tangent: data.tangent.into(),
+                    binormal: data.binormal.into(),
+                    uv0: data.uv0,
+                })
+            }
+            Ok(Self(vertices))
+        } else {
+            Err(BinError::Custom {
+                pos: reader.stream_position()?,
+                err: Box::new(RenderBlockError::InvalidArrayLength),
+            })
+        }
+    }
+}
+
+impl BinWrite for VertexBuffer<SkinnedVertex> {
+    type Args<'a> = <SkinnedVertex as Vertex>::VertexArgs;
+
+    #[inline]
+    fn write_options<W: std::io::prelude::Write + std::io::prelude::Seek>(
+        &self,
+        writer: &mut W,
+        endian: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::prelude::BinResult<()> {
+        let mut positions = Vec::with_capacity(self.len());
+        let mut datas = Vec::with_capacity(self.len());
+        for vertex in self.iter() {
+            positions.push(SkinnedVertexPosition {
+                position: vertex.position,
+                bone_weights: vertex.bone_weights,
+                bone_indices: vertex.bone_indices,
+            });
+            datas.push(SkinnedVertexData {
+                normal: vertex.normal.into(),
+                tangent: vertex.tangent.into(),
+                binormal: vertex.binormal.into(),
+                uv0: vertex.uv0,
+            });
+        }
+        positions.write_options(writer, endian, args)?;
+        datas.write_options(writer, endian, ())?;
+        Ok(())
+    }
 }
 
 impl From<GenericVertex> for SkinnedVertex {
@@ -51,9 +125,9 @@ impl From<SkinnedVertex> for GenericVertex {
                 value.bone_indices[6] as u32,
                 value.bone_indices[7] as u32,
             ],
-            normal: value.normal.into(),
-            tangent: value.tangent.into(),
-            binormal: value.binormal.into(),
+            normal: value.normal,
+            tangent: value.tangent,
+            binormal: value.binormal,
             uv0: value.uv0,
             ..Default::default()
         }

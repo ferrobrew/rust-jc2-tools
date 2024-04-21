@@ -3,9 +3,7 @@ use bitflags::bitflags;
 
 use crate::{
     math::Vec3,
-    render_block_model::{
-        IndexBuffer, Material, SkinBatch, SkinnedVertexData, SkinnedVertexPosition, VertexBuffer,
-    },
+    render_block_model::{IndexBuffer, Material, SkinBatch, SkinnedVertex, VertexBuffer},
 };
 
 #[binrw]
@@ -131,8 +129,7 @@ pub struct SkinnedGeneralRenderBlock {
     pub attributes: SkinnedGeneralAttributes,
     pub material: Material,
     #[brw(args(attributes.flags.intersects(SkinnedGeneralFlags::EIGHT_BONE_INFLUENCE)))]
-    pub vertices: VertexBuffer<SkinnedVertexPosition>,
-    pub skinned_vertices: VertexBuffer<SkinnedVertexData>,
+    pub vertices: VertexBuffer<SkinnedVertex>,
     pub skin_batches: VertexBuffer<SkinBatch>,
     #[brw(args(vertices.len()))]
     pub indices: IndexBuffer<u16>,
