@@ -2327,6 +2327,7 @@ version = "0.1.0"
 dependencies = [
  "binrw",
  "bitflags 2.5.0",
+ "bytemuck",
  "jc2_hashing",
  "num-traits",
  "thiserror",

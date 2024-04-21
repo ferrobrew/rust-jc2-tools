@@ -13,6 +13,9 @@ pub use general::*;
 mod lambert;
 pub use lambert::*;
 
+mod skinned_general;
+pub use skinned_general::*;
+
 #[binrw]
 #[rustfmt::skip]
 #[derive(Clone, Debug)]
@@ -157,9 +160,9 @@ pub enum RenderBlock {
     // #[brw(magic(1295678767u32))]
     // Skidmarks(SkidmarksRenderBlock),
 
-    // /// HashString::from_str("SkinnedGeneral")
-    // #[brw(magic(1583709984u32))]
-    // SkinnedGeneral(SkinnedGeneralRenderBlock),
+    /// HashString::from_str("SkinnedGeneral")
+    #[brw(magic(1583709984u32))]
+    SkinnedGeneral(SkinnedGeneralRenderBlock),
 
     // /// HashString::from_str("SkyGradient")
     // #[brw(magic(1678205320u32))]

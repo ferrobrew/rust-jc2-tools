@@ -2,7 +2,7 @@ use binrw::binrw;
 
 use crate::{
     math::{Vec2, Vec3},
-    render_block_model::PackedNormal,
+    render_block_model::PackedNormalF32,
 };
 
 use super::{GenericVertex, Vertex};
@@ -11,10 +11,10 @@ use super::{GenericVertex, Vertex};
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SimpleVertex {
     pub position: Vec3<f32>,
-    pub normal: PackedNormal,
+    pub normal: PackedNormalF32,
     pub uv0: Vec2<f32>,
-    pub tangent: PackedNormal,
-    pub binormal: PackedNormal,
+    pub tangent: PackedNormalF32,
+    pub binormal: PackedNormalF32,
 }
 
 impl Vertex for SimpleVertex {

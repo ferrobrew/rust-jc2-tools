@@ -5,7 +5,7 @@ use crate::{
         ops::{VecCross, VecDot},
         Vec2, Vec3, Vec4,
     },
-    render_block_model::{PackedNormal, PackedPosition, PackedRGBA, PackedUV, VertexFormat},
+    render_block_model::{PackedNormalF32, PackedPosition, PackedRGBA, PackedUV, VertexFormat},
 };
 
 use super::{GenericVertex, Vertex};
@@ -132,8 +132,8 @@ pub struct GeneralVertexF32 {
     pub position: Vec3<f32>,
     pub uv0: Vec2<f32>,
     pub uv1: Vec2<f32>,
-    pub normal: PackedNormal,
-    pub tangent: PackedNormal,
+    pub normal: PackedNormalF32,
+    pub tangent: PackedNormalF32,
     pub color: PackedRGBA,
 }
 
@@ -156,8 +156,8 @@ impl From<GeneralVertexF32> for GenericVertex {
 pub struct GeneralVertexI16 {
     pub uv0: PackedUV,
     pub uv1: PackedUV,
-    pub normal: PackedNormal,
-    pub tangent: PackedNormal,
+    pub normal: PackedNormalF32,
+    pub tangent: PackedNormalF32,
     pub color: PackedRGBA,
     #[brw(pad_after = 2)]
     pub position: PackedPosition,

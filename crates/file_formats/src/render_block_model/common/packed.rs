@@ -50,9 +50,9 @@ impl From<PackedPosition> for Vec3<f32> {
 
 #[binrw]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
-pub struct PackedNormal(f32);
+pub struct PackedNormalF32(f32);
 
-impl From<Vec3<f32>> for PackedNormal {
+impl From<Vec3<f32>> for PackedNormalF32 {
     fn from(value: Vec3<f32>) -> Self {
         Self({
             let x = (value.x * 0.5 + 1.0) * 1.0;
@@ -63,12 +63,37 @@ impl From<Vec3<f32>> for PackedNormal {
     }
 }
 
-impl From<PackedNormal> for Vec3<f32> {
-    fn from(value: PackedNormal) -> Self {
+impl From<PackedNormalF32> for Vec3<f32> {
+    fn from(value: PackedNormalF32) -> Self {
         Self {
             x: (value.0 / 1.0).fract() * 2.0 - 1.0,
             y: (value.0 / 256.0).fract() * 2.0 - 1.0,
             z: (value.0 / 65536.0).fract() * 2.0 - 1.0,
+        }
+    }
+}
+
+#[binrw]
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct PackedNormalU32(u32);
+
+impl From<Vec3<f32>> for PackedNormalU32 {
+    fn from(value: Vec3<f32>) -> Self {
+        Self({
+            let x = ((((value.x * 127.0) + 128.0) as u32) & 0xFF) << 24;
+            let y = ((((value.y * 127.0) + 128.0) as u32) & 0xFF) << 16;
+            let z = ((((value.z * 127.0) + 128.0) as u32) & 0xFF) << 8;
+            x + y + z + 128u32
+        })
+    }
+}
+
+impl From<PackedNormalU32> for Vec3<f32> {
+    fn from(value: PackedNormalU32) -> Self {
+        Self {
+            x: ((((value.0 >> 24) & 0xFF) as f32) - 128.0) / 127.0,
+            y: ((((value.0 >> 16) & 0xFF) as f32) - 128.0) / 127.0,
+            z: ((((value.0 >> 8) & 0xFF) as f32) - 128.0) / 127.0,
         }
     }
 }

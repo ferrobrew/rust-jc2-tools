@@ -9,3 +9,6 @@ pub use buffers::*;
 
 mod simple;
 pub use simple::*;
+
+mod skinned;
+pub use skinned::*;
