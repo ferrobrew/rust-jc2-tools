@@ -11,8 +11,8 @@ use super::{GenericVertex, Vertex, VertexBuffer};
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SkinnedVertex {
     pub position: Vec3<f32>,
-    pub bone_weights: [u8; 8],
-    pub bone_indices: [u8; 8],
+    pub bone_weights: [f32; 8],
+    pub bone_indices: [u32; 8],
     pub normal: Vec3<f32>,
     pub tangent: Vec3<f32>,
     pub binormal: Vec3<f32>,
@@ -105,26 +105,8 @@ impl From<SkinnedVertex> for GenericVertex {
     fn from(value: SkinnedVertex) -> Self {
         Self {
             position: value.position,
-            bone_weights: [
-                value.bone_weights[0] as f32 / 255.0,
-                value.bone_weights[1] as f32 / 255.0,
-                value.bone_weights[2] as f32 / 255.0,
-                value.bone_weights[3] as f32 / 255.0,
-                value.bone_weights[4] as f32 / 255.0,
-                value.bone_weights[5] as f32 / 255.0,
-                value.bone_weights[6] as f32 / 255.0,
-                value.bone_weights[7] as f32 / 255.0,
-            ],
-            bone_indices: [
-                value.bone_indices[0] as u32,
-                value.bone_indices[1] as u32,
-                value.bone_indices[2] as u32,
-                value.bone_indices[3] as u32,
-                value.bone_indices[4] as u32,
-                value.bone_indices[5] as u32,
-                value.bone_indices[6] as u32,
-                value.bone_indices[7] as u32,
-            ],
+            bone_weights: value.bone_weights,
+            bone_indices: value.bone_indices,
             normal: value.normal,
             tangent: value.tangent,
             binormal: value.binormal,
@@ -138,8 +120,8 @@ impl From<SkinnedVertex> for GenericVertex {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SkinnedVertexPosition {
     pub position: Vec3<f32>,
-    pub bone_weights: [u8; 8],
-    pub bone_indices: [u8; 8],
+    pub bone_weights: [f32; 8],
+    pub bone_indices: [u32; 8],
 }
 
 impl Vertex for SkinnedVertexPosition {
@@ -181,12 +163,30 @@ impl BinWrite for SkinnedVertexPosition {
 impl From<SkinnedVertex4Position> for SkinnedVertexPosition {
     #[inline]
     fn from(value: SkinnedVertex4Position) -> Self {
-        let bone_weights: [u32; 2] = [bytemuck::must_cast(value.bone_weights), 0u32];
-        let bone_indices: [u32; 2] = [bytemuck::must_cast(value.bone_indices), 0u32];
+        let bone_weights: [u8; 4] = bytemuck::must_cast(value.bone_weights);
+        let bone_indices: [u8; 4] = bytemuck::must_cast(value.bone_indices);
         Self {
             position: value.position,
-            bone_weights: bytemuck::must_cast(bone_weights),
-            bone_indices: bytemuck::must_cast(bone_indices),
+            bone_weights: [
+                bone_weights[0] as f32 / 255.0,
+                bone_weights[1] as f32 / 255.0,
+                bone_weights[2] as f32 / 255.0,
+                bone_weights[3] as f32 / 255.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            bone_indices: [
+                bone_indices[0] as u32,
+                bone_indices[1] as u32,
+                bone_indices[2] as u32,
+                bone_indices[3] as u32,
+                0,
+                0,
+                0,
+                0,
+            ],
         }
     }
 }
@@ -194,10 +194,30 @@ impl From<SkinnedVertex4Position> for SkinnedVertexPosition {
 impl From<SkinnedVertex8Position> for SkinnedVertexPosition {
     #[inline]
     fn from(value: SkinnedVertex8Position) -> Self {
+        let bone_weights: [u8; 8] = bytemuck::must_cast(value.bone_weights);
+        let bone_indices: [u8; 8] = bytemuck::must_cast(value.bone_indices);
         Self {
             position: value.position,
-            bone_weights: bytemuck::must_cast(value.bone_weights),
-            bone_indices: bytemuck::must_cast(value.bone_indices),
+            bone_weights: [
+                bone_weights[0] as f32 / 255.0,
+                bone_weights[1] as f32 / 255.0,
+                bone_weights[2] as f32 / 255.0,
+                bone_weights[3] as f32 / 255.0,
+                bone_weights[4] as f32 / 255.0,
+                bone_weights[5] as f32 / 255.0,
+                bone_weights[6] as f32 / 255.0,
+                bone_weights[7] as f32 / 255.0,
+            ],
+            bone_indices: [
+                bone_indices[0] as u32,
+                bone_indices[1] as u32,
+                bone_indices[2] as u32,
+                bone_indices[3] as u32,
+                bone_indices[4] as u32,
+                bone_indices[5] as u32,
+                bone_indices[6] as u32,
+                bone_indices[7] as u32,
+            ],
         }
     }
 }
