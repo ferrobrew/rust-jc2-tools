@@ -3,7 +3,7 @@ use bitflags::bitflags;
 
 use crate::{
     math::{Vec3, Vec4},
-    render_block_model::{IndexBuffer, SimpleVertex, VertexBuffer},
+    render_block_model::{IndexBuffer, Material, SimpleVertex, VertexBuffer},
 };
 
 #[binrw]
@@ -66,6 +66,7 @@ impl Default for CarPaintAttributes {
 pub struct CarPaintSimpleRenderBlock {
     pub version: CarPaintSimpleVersion,
     pub attributes: CarPaintAttributes,
+    pub material: Material,
     pub vertices: VertexBuffer<SimpleVertex>,
     #[brw(args(vertices.len()))]
     pub indices: IndexBuffer<u16>,
