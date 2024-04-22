@@ -132,7 +132,7 @@ fn create_views_and_accessors<T: Clone + GltfMeshAccessors>(
 }
 
 fn main() -> anyhow::Result<()> {
-    let data = include_bytes!("../res/statictram/v110_lod1-pillar.rbm") as &[u8];
+    let data = include_bytes!("../res/traincar01/gp040_lod1-e.rbm") as &[u8];
     let rbm = RenderBlockModel::read(&mut Cursor::new(data))?;
 
     // First pass, calculate necessary buffer size, and round up to nearest multiple of 4
@@ -184,7 +184,7 @@ fn main() -> anyhow::Result<()> {
 
     for block in rbm.blocks.iter() {
         let primitive = match block {
-            RenderBlock::General(data) => {
+            RenderBlock::CarPaint(data) => {
                 let mut primitive = MeshPrimitive {
                     mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
                     ..default_primitive.clone()
@@ -200,6 +200,21 @@ fn main() -> anyhow::Result<()> {
                 primitive
             }
             RenderBlock::CarPaintSimple(data) => {
+                let mut primitive = MeshPrimitive {
+                    mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
+                    ..default_primitive.clone()
+                };
+                create_views_and_accessors(
+                    &mut root,
+                    &mut primitive,
+                    &mut buffer_offset,
+                    &data.vertices,
+                    &data.indices,
+                    buffer,
+                );
+                primitive
+            }
+            RenderBlock::General(data) => {
                 let mut primitive = MeshPrimitive {
                     mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
                     ..default_primitive.clone()

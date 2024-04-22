@@ -1,3 +1,6 @@
+mod deformable;
+pub use deformable::*;
+
 mod general;
 pub use general::*;
 

@@ -1,50 +1,52 @@
 use std::mem::size_of;
 
-use jc2_file_formats::render_block_model::SkinnedVertex;
+use jc2_file_formats::render_block_model::DeformableVertex;
 
 use crate::AccessorComponentType;
 
 use super::{AccessorType, GltfMeshAccessor, GltfMeshAccessors, MeshSemantic};
 
-impl GltfMeshAccessors for SkinnedVertex {
+impl GltfMeshAccessors for DeformableVertex {
     fn get_mesh_accessors() -> Vec<GltfMeshAccessor> {
         let mut result = vec![(
             AccessorType::Vec3,
             AccessorComponentType::F32,
             MeshSemantic::Positions,
-            bytemuck::offset_of!(SkinnedVertex, position),
+            bytemuck::offset_of!(DeformableVertex, position),
         )];
-        for i in 0..8 {
+        for i in 0..4 {
             result.push((
                 AccessorType::Scalar,
                 AccessorComponentType::F32,
                 MeshSemantic::Weights(i),
-                bytemuck::offset_of!(SkinnedVertex, bone_weights) + size_of::<f32>() * i as usize,
+                bytemuck::offset_of!(DeformableVertex, bone_weights)
+                    + size_of::<f32>() * i as usize,
             ));
             result.push((
                 AccessorType::Scalar,
                 AccessorComponentType::U32,
                 MeshSemantic::Joints(i),
-                bytemuck::offset_of!(SkinnedVertex, bone_indices) + size_of::<u32>() * i as usize,
+                bytemuck::offset_of!(DeformableVertex, bone_indices)
+                    + size_of::<u32>() * i as usize,
             ));
         }
         result.push((
             AccessorType::Vec3,
             AccessorComponentType::F32,
             MeshSemantic::Normals,
-            bytemuck::offset_of!(SkinnedVertex, normal),
+            bytemuck::offset_of!(DeformableVertex, normal),
         ));
         result.push((
             AccessorType::Vec3,
             AccessorComponentType::F32,
             MeshSemantic::Tangents,
-            bytemuck::offset_of!(SkinnedVertex, tangent),
+            bytemuck::offset_of!(DeformableVertex, tangent),
         ));
         result.push((
             AccessorType::Vec2,
             AccessorComponentType::F32,
             MeshSemantic::TexCoords(0),
-            bytemuck::offset_of!(SkinnedVertex, uv0),
+            bytemuck::offset_of!(DeformableVertex, uv0),
         ));
         result
     }

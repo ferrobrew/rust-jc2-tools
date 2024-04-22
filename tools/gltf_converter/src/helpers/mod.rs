@@ -2,6 +2,7 @@ use std::{mem::size_of_val, slice};
 
 use jc2_file_formats::render_block_model::RenderBlock;
 
+mod deformable;
 mod general;
 mod simple;
 mod skinned;
@@ -36,6 +37,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn get_vertex_buffer(&self) -> &[u8] {
         match self {
+            RenderBlock::CarPaint(data) => bytes(&data.vertices),
             RenderBlock::CarPaintSimple(data) => bytes(&data.vertices),
             RenderBlock::General(data) => bytes(&data.vertices),
             RenderBlock::Lambert(data) => bytes(&data.vertices),
@@ -46,6 +48,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn get_index_buffer(&self) -> &[u8] {
         match self {
+            RenderBlock::CarPaint(data) => bytes(&data.indices),
             RenderBlock::CarPaintSimple(data) => bytes(&data.indices),
             RenderBlock::General(data) => bytes(&data.indices),
             RenderBlock::Lambert(data) => bytes(&data.indices),
@@ -56,6 +59,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn get_mesh_accessors(&self) -> Vec<GltfMeshAccessor> {
         match self {
+            RenderBlock::CarPaint(data) => accessors(&data.vertices),
             RenderBlock::CarPaintSimple(data) => accessors(&data.vertices),
             RenderBlock::General(data) => accessors(&data.vertices),
             RenderBlock::Lambert(data) => accessors(&data.vertices),
