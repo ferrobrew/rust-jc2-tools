@@ -1,9 +1,9 @@
 use binrw::binrw;
 
 #[binrw]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DeformTable {
-    pub data: [u16; DeformTable::MAX_TABLE_SIZE],
+    pub data: [u32; DeformTable::MAX_TABLE_SIZE],
 }
 
 impl DeformTable {
@@ -13,7 +13,7 @@ impl DeformTable {
 impl Default for DeformTable {
     fn default() -> Self {
         Self {
-            data: [0u16; DeformTable::MAX_TABLE_SIZE],
+            data: [0u32; DeformTable::MAX_TABLE_SIZE],
         }
     }
 }
