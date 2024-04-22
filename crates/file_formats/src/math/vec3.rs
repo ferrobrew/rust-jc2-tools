@@ -1,4 +1,4 @@
-use std::ops::Mul;
+use std::ops::{Add, Div, Mul, Sub};
 
 use binrw::binrw;
 
@@ -31,6 +31,19 @@ impl<T: VecType> Vec3<T> {
     }
 }
 
+impl<T: VecType> Add<Vec3<T>> for Vec3<T> {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        Self::Output {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
 impl<T: VecType> Mul<T> for Vec3<T> {
     type Output = Self;
 
@@ -40,6 +53,32 @@ impl<T: VecType> Mul<T> for Vec3<T> {
             x: self.x * rhs,
             y: self.y * rhs,
             z: self.z * rhs,
+        }
+    }
+}
+
+impl<T: VecType> Sub<Vec3<T>> for Vec3<T> {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: Self) -> Self {
+        Self::Output {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl<T: VecType> Div<T> for Vec3<T> {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: T) -> Self {
+        Self::Output {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
         }
     }
 }
