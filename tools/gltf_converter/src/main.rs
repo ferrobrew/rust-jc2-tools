@@ -1,15 +1,12 @@
-use std::{
-    io::{Cursor, Write},
-    mem::{self, size_of_val},
-};
+use std::io::{Cursor, Write};
 
 use gltf_json::{
     buffer::Stride,
     validation::{Checked, USize64},
     Index,
 };
-use helpers::{GltfMeshAccessor, GltfMeshAccessors};
-use jc2_file_formats::render_block_model::{RenderBlock, RenderBlockModel};
+use helpers::GltfMeshAccessor;
+use jc2_file_formats::render_block_model::RenderBlockModel;
 
 use crate::helpers::GltfHelpers;
 
@@ -21,20 +18,21 @@ type BufferIndex = Index<Buffer>;
 type BufferView = gltf_json::buffer::View;
 type BufferViewIndex = Index<BufferView>;
 
-fn create_buffer_view<T: Clone>(
+fn create_buffer_view(
     root: &mut GltfRoot,
     name: &str,
     buffer: BufferIndex,
+    length: usize,
     offset: usize,
-    data: &[T],
+    stride: usize,
 ) -> BufferViewIndex {
     root.push(BufferView {
         name: Some(name.into()),
         target: Some(Checked::Valid(gltf_json::buffer::Target::ArrayBuffer)),
         buffer,
-        byte_length: size_of_val(data).into(),
+        byte_length: length.into(),
         byte_offset: Some(offset.into()),
-        byte_stride: Some(Stride(mem::size_of::<T>())),
+        byte_stride: Some(Stride(stride)),
         extensions: Default::default(),
         extras: Default::default(),
     })
@@ -55,7 +53,7 @@ fn create_accessor(
     let (accessor_type, component_type, semantic, offset) = accessor;
     let accessor = root.push(Accessor {
         buffer_view: Some(buffer_view_index),
-        byte_offset: Some(offset.into()),
+        byte_offset: Some((offset).into()),
         count: count.into(),
         component_type: Checked::Valid(gltf_json::accessor::GenericComponentType(component_type)),
         extensions: Default::default(),
@@ -99,48 +97,70 @@ fn create_index_accessor(
     accessor
 }
 
-fn create_accessors<T: GltfMeshAccessors>(
+fn create_accessors(
     root: &mut GltfRoot,
     primitive: &mut MeshPrimitive,
     buffer_view_index: BufferViewIndex,
-    vertices: &[T],
+    accessors: &[GltfMeshAccessor],
+    count: usize,
 ) {
-    let count = vertices.len();
-    for accessor in T::get_mesh_accessors() {
-        create_accessor(root, primitive, buffer_view_index, accessor, count);
+    for accessor in accessors {
+        create_accessor(root, primitive, buffer_view_index, accessor.clone(), count);
     }
 }
 
-fn create_views_and_accessors<T: Clone + GltfMeshAccessors>(
+fn create_views_and_accessors<T: Clone + GltfHelpers>(
     root: &mut GltfRoot,
     primitive: &mut MeshPrimitive,
     offset: &mut usize,
-    vertices: &[T],
-    indices: &[u16],
+    block: &T,
     buffer: BufferIndex,
 ) {
     let idx = root.meshes.len();
 
-    let view = create_buffer_view(root, &format!("vertex_{idx}"), buffer, *offset, vertices);
-    create_accessors(root, primitive, view, vertices);
-    *offset += size_of_val(vertices);
+    let length = block.vertices_as_bytes().len();
+    let stride = block.vertex_stride();
+    let view = create_buffer_view(
+        root,
+        &format!("vertex_{idx}"),
+        buffer,
+        length,
+        *offset,
+        stride,
+    );
+    create_accessors(
+        root,
+        primitive,
+        view,
+        &block.accessors(),
+        block.vertex_count(),
+    );
+    *offset += length;
 
-    // TODO: for whatever reason our index buffer is totally incorrect...
-    let view = create_buffer_view(root, &format!("index_{idx}"), buffer, *offset, indices);
-    create_index_accessor(root, primitive, view, indices.len());
-    *offset += size_of_val(indices);
+    let length = block.indices_as_bytes().len();
+    let stride = block.index_stride();
+    let view = create_buffer_view(
+        root,
+        &format!("index_{idx}"),
+        buffer,
+        length,
+        *offset,
+        stride,
+    );
+    create_index_accessor(root, primitive, view, block.index_count());
+    *offset += length;
 }
 
 fn main() -> anyhow::Result<()> {
-    let data = include_bytes!("../res/traincar01/gp040_lod1-e.rbm") as &[u8];
+    let data = include_bytes!("../res/babypanay/MC05_LOD1-BabyPanay.rbm") as &[u8];
     let rbm = RenderBlockModel::read(&mut Cursor::new(data))?;
 
     // First pass, calculate necessary buffer size, and round up to nearest multiple of 4
     let mut buffer_size = 0;
 
     for block in rbm.blocks.iter() {
-        buffer_size += block.get_vertex_buffer().len();
-        buffer_size += block.get_index_buffer().len();
+        buffer_size += block.vertices_as_bytes().len();
+        buffer_size += block.indices_as_bytes().len();
     }
 
     buffer_size = (buffer_size + 3) & !3;
@@ -149,8 +169,8 @@ fn main() -> anyhow::Result<()> {
     let mut buffer = Vec::with_capacity(buffer_size);
 
     for block in rbm.blocks.iter() {
-        buffer.extend_from_slice(block.get_vertex_buffer());
-        buffer.extend_from_slice(block.get_index_buffer());
+        buffer.extend_from_slice(block.vertices_as_bytes());
+        buffer.extend_from_slice(block.indices_as_bytes());
     }
 
     buffer.resize(buffer_size, 0);
@@ -183,83 +203,11 @@ fn main() -> anyhow::Result<()> {
     };
 
     for block in rbm.blocks.iter() {
-        let primitive = match block {
-            RenderBlock::CarPaint(data) => {
-                let mut primitive = MeshPrimitive {
-                    mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
-                    ..default_primitive.clone()
-                };
-                create_views_and_accessors(
-                    &mut root,
-                    &mut primitive,
-                    &mut buffer_offset,
-                    &data.vertices,
-                    &data.indices,
-                    buffer,
-                );
-                primitive
-            }
-            RenderBlock::CarPaintSimple(data) => {
-                let mut primitive = MeshPrimitive {
-                    mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
-                    ..default_primitive.clone()
-                };
-                create_views_and_accessors(
-                    &mut root,
-                    &mut primitive,
-                    &mut buffer_offset,
-                    &data.vertices,
-                    &data.indices,
-                    buffer,
-                );
-                primitive
-            }
-            RenderBlock::General(data) => {
-                let mut primitive = MeshPrimitive {
-                    mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
-                    ..default_primitive.clone()
-                };
-                create_views_and_accessors(
-                    &mut root,
-                    &mut primitive,
-                    &mut buffer_offset,
-                    &data.vertices,
-                    &data.indices,
-                    buffer,
-                );
-                primitive
-            }
-            RenderBlock::Lambert(data) => {
-                let mut primitive = MeshPrimitive {
-                    mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
-                    ..default_primitive.clone()
-                };
-                create_views_and_accessors(
-                    &mut root,
-                    &mut primitive,
-                    &mut buffer_offset,
-                    &data.vertices,
-                    &data.indices,
-                    buffer,
-                );
-                primitive
-            }
-            RenderBlock::SkinnedGeneral(data) => {
-                let mut primitive = MeshPrimitive {
-                    mode: Checked::Valid(gltf_json::mesh::Mode::Triangles),
-                    ..default_primitive.clone()
-                };
-                create_views_and_accessors(
-                    &mut root,
-                    &mut primitive,
-                    &mut buffer_offset,
-                    &data.vertices,
-                    &data.indices,
-                    buffer,
-                );
-                primitive
-            }
+        let mut primitive = MeshPrimitive {
+            mode: Checked::Valid(block.mesh_mode()),
+            ..default_primitive.clone()
         };
+        create_views_and_accessors(&mut root, &mut primitive, &mut buffer_offset, block, buffer);
         primitives.push(primitive);
     }
 
