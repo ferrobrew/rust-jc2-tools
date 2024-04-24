@@ -91,6 +91,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => count(&data.vertices),
             RenderBlock::CarPaintSimple(data) => count(&data.vertices),
+            RenderBlock::DeformableWindow(data) => count(&data.vertices),
             RenderBlock::General(data) => count(&data.vertices),
             RenderBlock::Lambert(data) => count(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => count(&data.vertices),
@@ -102,6 +103,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => count(&data.indices),
             RenderBlock::CarPaintSimple(data) => count(&data.indices),
+            RenderBlock::DeformableWindow(data) => count(&data.indices),
             RenderBlock::General(data) => count(&data.indices),
             RenderBlock::Lambert(data) => count(&data.indices),
             RenderBlock::SkinnedGeneral(data) => count(&data.indices),
@@ -113,6 +115,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => stride(&data.vertices),
             RenderBlock::CarPaintSimple(data) => stride(&data.vertices),
+            RenderBlock::DeformableWindow(data) => stride(&data.vertices),
             RenderBlock::General(data) => stride(&data.vertices),
             RenderBlock::Lambert(data) => stride(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => stride(&data.vertices),
@@ -124,6 +127,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => stride(&data.indices),
             RenderBlock::CarPaintSimple(data) => stride(&data.indices),
+            RenderBlock::DeformableWindow(data) => stride(&data.indices),
             RenderBlock::General(data) => stride(&data.indices),
             RenderBlock::Lambert(data) => stride(&data.indices),
             RenderBlock::SkinnedGeneral(data) => stride(&data.indices),
@@ -135,6 +139,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => bytes(&data.vertices),
             RenderBlock::CarPaintSimple(data) => bytes(&data.vertices),
+            RenderBlock::DeformableWindow(data) => bytes(&data.vertices),
             RenderBlock::General(data) => bytes(&data.vertices),
             RenderBlock::Lambert(data) => bytes(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => bytes(&data.vertices),
@@ -146,6 +151,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => bytes(&data.indices),
             RenderBlock::CarPaintSimple(data) => bytes(&data.indices),
+            RenderBlock::DeformableWindow(data) => bytes(&data.indices),
             RenderBlock::General(data) => bytes(&data.indices),
             RenderBlock::Lambert(data) => bytes(&data.indices),
             RenderBlock::SkinnedGeneral(data) => bytes(&data.indices),
@@ -157,6 +163,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => textures(&data.material),
             RenderBlock::CarPaintSimple(data) => textures(&data.material),
+            RenderBlock::DeformableWindow(data) => textures(&data.material),
             RenderBlock::General(data) => textures(&data.material),
             RenderBlock::Lambert(data) => textures(&data.material),
             RenderBlock::SkinnedGeneral(data) => textures(&data.material),
@@ -168,6 +175,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => mesh_mode(&data.material),
             RenderBlock::CarPaintSimple(data) => mesh_mode(&data.material),
+            RenderBlock::DeformableWindow(data) => mesh_mode(&data.material),
             RenderBlock::General(data) => mesh_mode(&data.material),
             RenderBlock::Lambert(data) => mesh_mode(&data.material),
             RenderBlock::SkinnedGeneral(data) => mesh_mode(&data.material),
@@ -179,6 +187,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => accessors(&data.vertices),
             RenderBlock::CarPaintSimple(data) => accessors(&data.vertices),
+            RenderBlock::DeformableWindow(data) => accessors(&data.vertices),
             RenderBlock::General(data) => accessors(&data.vertices),
             RenderBlock::Lambert(data) => accessors(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => accessors(&data.vertices),
@@ -190,6 +199,7 @@ impl GltfHelpers for RenderBlock {
         match self {
             RenderBlock::CarPaint(data) => target_accessors(&data.vertices),
             RenderBlock::CarPaintSimple(data) => target_accessors(&data.vertices),
+            RenderBlock::DeformableWindow(data) => target_accessors(&data.vertices),
             RenderBlock::General(data) => target_accessors(&data.vertices),
             RenderBlock::Lambert(data) => target_accessors(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => target_accessors(&data.vertices),

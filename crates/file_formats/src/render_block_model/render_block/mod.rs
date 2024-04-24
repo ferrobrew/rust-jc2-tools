@@ -10,6 +10,9 @@ pub use car_paint_simple::*;
 mod car_paint;
 pub use car_paint::*;
 
+mod deformable_window;
+pub use deformable_window::*;
+
 mod general;
 pub use general::*;
 
@@ -120,9 +123,9 @@ pub enum RenderBlock {
     // #[brw(magic(2319630529u32))]
     // DecalSkinned(RenderBlockWrapper::<DecalSkinnedRenderBlock>),
 
-    // /// HashString::from_str("DeformableWindow")
-    // #[brw(magic(112326146u32))]
-    // DeformableWindow(RenderBlockWrapper::<DeformableWindowRenderBlock>),
+    /// HashString::from_str("DeformableWindow")
+    #[brw(magic(112326146u32))]
+    DeformableWindow(RenderBlockWrapper::<DeformableWindowRenderBlock>),
 
     // /// HashString::from_str("Facade")
     // #[brw(magic(3459897279u32))]

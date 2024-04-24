@@ -183,7 +183,7 @@ fn create_views_and_accessors<T: GltfHelpers>(
 }
 
 fn main() -> anyhow::Result<()> {
-    let data = include_bytes!("../res/lave.v041_tractor/v041-modernbody_m_lod1.rbm") as &[u8];
+    let data = include_bytes!("../res/lave.v041_tractor/v041_lod1-body.rbm") as &[u8];
     let rbm = RenderBlockModel::read(&mut Cursor::new(data))?;
 
     // First pass, calculate necessary buffer size, and round up to nearest multiple of 4
@@ -220,40 +220,50 @@ fn main() -> anyhow::Result<()> {
     });
 
     // Next pass, create the final gltf
-    let mut primitives: Vec<MeshPrimitive> = Vec::with_capacity(rbm.blocks.len());
     let mut buffer_offset = 0;
-
-    let default_primitive = MeshPrimitive {
-        attributes: Default::default(),
-        extensions: Default::default(),
-        extras: Default::default(),
-        indices: None,
-        material: None,
-        mode: Checked::Invalid,
-        targets: None,
-    };
+    let mut nodes = Vec::with_capacity(rbm.blocks.len());
 
     for block in rbm.blocks.iter() {
         let mut primitive = MeshPrimitive {
+            attributes: Default::default(),
+            extensions: Default::default(),
+            extras: Default::default(),
+            indices: None,
+            material: None,
             mode: Checked::Valid(block.mesh_mode()),
-            ..default_primitive.clone()
+            targets: None,
         };
+
         create_views_and_accessors(&mut root, &mut primitive, &mut buffer_offset, block, buffer);
-        primitives.push(primitive);
+
+        let mesh = root.push(gltf_json::Mesh {
+            extensions: Default::default(),
+            extras: Default::default(),
+            name: None,
+            primitives: vec![primitive],
+            weights: None,
+        });
+
+        nodes.push(root.push(gltf_json::Node {
+            mesh: Some(mesh),
+            camera: Default::default(),
+            children: Default::default(),
+            extensions: Default::default(),
+            extras: Default::default(),
+            matrix: Default::default(),
+            name: Default::default(),
+            rotation: Default::default(),
+            scale: Default::default(),
+            translation: Default::default(),
+            skin: Default::default(),
+            weights: Default::default(),
+        }));
     }
 
-    let mesh = root.push(gltf_json::Mesh {
-        extensions: Default::default(),
-        extras: Default::default(),
-        name: None,
-        primitives,
-        weights: None,
-    });
-
     root.push(gltf_json::Node {
-        mesh: Some(mesh),
+        mesh: Default::default(),
         camera: Default::default(),
-        children: Default::default(),
+        children: Some(nodes),
         extensions: Default::default(),
         extras: Default::default(),
         matrix: Default::default(),

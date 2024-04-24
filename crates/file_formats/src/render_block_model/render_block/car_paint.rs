@@ -3,7 +3,7 @@ use bitflags::bitflags;
 
 use crate::{
     math::{Vec3, Vec4},
-    render_block_model::{DeformTable, DeformableVertex, IndexBuffer, Material, VertexBuffer},
+    render_block_model::{DeformTable, IndexBuffer, LitDeformableVertex, Material, VertexBuffer},
 };
 
 #[binrw]
@@ -69,7 +69,7 @@ pub struct CarPaintRenderBlock {
     pub version: CarPaintVersion,
     pub attributes: CarPaintAttributes,
     pub material: Material,
-    pub vertices: VertexBuffer<DeformableVertex>,
+    pub vertices: VertexBuffer<LitDeformableVertex>,
     pub indices: IndexBuffer<u16>,
     pub deform_table: DeformTable,
 }
@@ -92,10 +92,10 @@ impl BinRead for CarPaintRenderBlock {
             result.deform_table = DeformTable::read_options(reader, endian, ())?;
         }
         result.material = Material::read_options(reader, endian, ())?;
-        result.vertices = VertexBuffer::<DeformableVertex>::read_options(
+        result.vertices = VertexBuffer::<LitDeformableVertex>::read_options(
             reader,
             endian,
-            (result.version as u32 > 2,),
+            (result.version as u8 > 2,),
         )?;
         result.indices =
             IndexBuffer::<u16>::read_options(reader, endian, (result.vertices.len(),))?;
@@ -116,12 +116,13 @@ impl BinWrite for CarPaintRenderBlock {
         endian: binrw::Endian,
         args: Self::Args<'_>,
     ) -> binrw::prelude::BinResult<()> {
+        self.version.write_options(writer, endian, ())?;
         if self.version != CarPaintVersion::V3 {
             self.deform_table.write_options(writer, endian, args)?;
         }
         self.material.write_options(writer, endian, args)?;
         self.vertices
-            .write_options(writer, endian, (self.version as u32 > 2,))?;
+            .write_options(writer, endian, (self.version as u8 > 2,))?;
         self.indices
             .write_options(writer, endian, (self.vertices.len(),))?;
         if self.version == CarPaintVersion::V3 {
