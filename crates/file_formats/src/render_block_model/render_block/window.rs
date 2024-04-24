@@ -24,9 +24,6 @@ bitflags! {
 }
 
 #[binrw]
-#[brw(import(
-    version: &WindowVersion
-))]
 #[derive(Clone, Debug)]
 pub struct WindowAttributes {
     pub specular_power: f32,
@@ -47,7 +44,6 @@ impl Default for WindowAttributes {
 #[derive(Clone, Debug)]
 pub struct WindowRenderBlock {
     pub version: WindowVersion,
-    #[brw(args(&version))]
     pub attributes: WindowAttributes,
     pub material: Material,
     #[brw(args(VertexFormat::F32))]
