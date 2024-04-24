@@ -127,7 +127,7 @@ impl From<DeformableVertexPacked> for DeformableVertex {
     fn from(value: DeformableVertexPacked) -> Self {
         Self {
             position: value.position,
-            morph_position: value.position + (Vec3::from(value.morph_position) * 2.5),
+            morph_position: Vec3::from(value.morph_position) * 2.5,
             bone_weights: [
                 (value.bone_weights_indices[0] & 0xFF) as f32 / 255.0,
                 (value.bone_weights_indices[1] & 0xFF) as f32 / 255.0,
@@ -216,7 +216,7 @@ impl From<DeformableVertex> for DeformableVertexPacked {
     fn from(value: DeformableVertex) -> Self {
         Self {
             position: value.position,
-            morph_position: ((value.morph_position - value.position) / 2.5).into(),
+            morph_position: (value.morph_position / 2.5).into(),
             bone_weights_indices: [
                 ((value.bone_weights[0] * 255.0) as u16 & 0xFF)
                     | (((value.bone_indices[0] - 128) & 0xFF) << 8) as u16,
