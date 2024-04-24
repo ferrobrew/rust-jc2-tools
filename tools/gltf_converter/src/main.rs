@@ -1,5 +1,7 @@
-use std::io::{Cursor, Write};
+use std::{io::Write, path::PathBuf};
 
+use anyhow::Context;
+use clap::Parser;
 use gltf_json::{buffer::Stride, mesh::MorphTarget, validation::Checked, Index};
 use helpers::GltfMeshAccessor;
 use jc2_file_formats::render_block_model::RenderBlockModel;
@@ -182,9 +184,16 @@ fn create_views_and_accessors<T: GltfHelpers>(
     *offset += length;
 }
 
+#[derive(Parser)]
+struct Args {
+    #[arg()]
+    file: PathBuf,
+}
+
 fn main() -> anyhow::Result<()> {
-    let data = include_bytes!("../res/lave.v041_tractor/v041_lod1-body.rbm") as &[u8];
-    let rbm = RenderBlockModel::read(&mut Cursor::new(data))?;
+    let args = Args::parse();
+    let file = std::fs::File::open(args.file.clone())?;
+    let rbm = RenderBlockModel::read(&mut std::io::BufReader::new(file))?;
 
     // First pass, calculate necessary buffer size, and round up to nearest multiple of 4
     let mut buffer_size = 0;
@@ -207,13 +216,20 @@ fn main() -> anyhow::Result<()> {
     buffer.resize(buffer_size, 0);
 
     // Create the gltf buffer
-    let mut writer = std::fs::File::create("Test.bin")?;
+    let filename = args.file.clone().with_extension("bin");
+    let mut writer = std::fs::File::create(filename.clone())?;
     writer.write_all(&buffer)?;
 
     let mut root = gltf_json::Root::default();
     let buffer = root.push(Buffer {
         name: Some("buffer".into()),
-        uri: Some("Test.bin".into()),
+        uri: Some(
+            filename
+                .file_name()
+                .context("invalid path")?
+                .to_string_lossy()
+                .into(),
+        ),
         byte_length: buffer_size.into(),
         extensions: Default::default(),
         extras: Default::default(),
@@ -275,7 +291,7 @@ fn main() -> anyhow::Result<()> {
         weights: Default::default(),
     });
 
-    let writer = std::fs::File::create("Test.gltf")?;
+    let writer = std::fs::File::create(args.file.clone().with_extension("gltf"))?;
     gltf_json::serialize::to_writer_pretty(writer, &root)?;
 
     Ok(())
