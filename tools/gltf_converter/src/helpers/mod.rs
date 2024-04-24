@@ -95,6 +95,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => count(&data.vertices),
             RenderBlock::Lambert(data) => count(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => count(&data.vertices),
+            RenderBlock::Window(data) => count(&data.vertices),
         }
     }
 
@@ -107,6 +108,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => count(&data.indices),
             RenderBlock::Lambert(data) => count(&data.indices),
             RenderBlock::SkinnedGeneral(data) => count(&data.indices),
+            RenderBlock::Window(data) => count(&data.indices),
         }
     }
 
@@ -119,6 +121,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => stride(&data.vertices),
             RenderBlock::Lambert(data) => stride(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => stride(&data.vertices),
+            RenderBlock::Window(data) => stride(&data.vertices),
         }
     }
 
@@ -131,6 +134,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => stride(&data.indices),
             RenderBlock::Lambert(data) => stride(&data.indices),
             RenderBlock::SkinnedGeneral(data) => stride(&data.indices),
+            RenderBlock::Window(data) => stride(&data.indices),
         }
     }
 
@@ -143,6 +147,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => bytes(&data.vertices),
             RenderBlock::Lambert(data) => bytes(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => bytes(&data.vertices),
+            RenderBlock::Window(data) => bytes(&data.vertices),
         }
     }
 
@@ -155,6 +160,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => bytes(&data.indices),
             RenderBlock::Lambert(data) => bytes(&data.indices),
             RenderBlock::SkinnedGeneral(data) => bytes(&data.indices),
+            RenderBlock::Window(data) => bytes(&data.indices),
         }
     }
 
@@ -167,6 +173,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => textures(&data.material),
             RenderBlock::Lambert(data) => textures(&data.material),
             RenderBlock::SkinnedGeneral(data) => textures(&data.material),
+            RenderBlock::Window(data) => textures(&data.material),
         }
     }
 
@@ -179,6 +186,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => mesh_mode(&data.material),
             RenderBlock::Lambert(data) => mesh_mode(&data.material),
             RenderBlock::SkinnedGeneral(data) => mesh_mode(&data.material),
+            RenderBlock::Window(data) => mesh_mode(&data.material),
         }
     }
 
@@ -191,6 +199,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => accessors(&data.vertices),
             RenderBlock::Lambert(data) => accessors(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => accessors(&data.vertices),
+            RenderBlock::Window(data) => accessors(&data.vertices),
         }
     }
 
@@ -203,6 +212,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::General(data) => target_accessors(&data.vertices),
             RenderBlock::Lambert(data) => target_accessors(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => target_accessors(&data.vertices),
+            RenderBlock::Window(data) => target_accessors(&data.vertices),
         }
     }
 }

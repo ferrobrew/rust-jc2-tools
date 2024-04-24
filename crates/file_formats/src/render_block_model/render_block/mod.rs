@@ -22,6 +22,9 @@ pub use lambert::*;
 mod skinned_general;
 pub use skinned_general::*;
 
+mod window;
+pub use window::*;
+
 #[binrw]
 #[derive(Clone, Debug)]
 pub struct RenderBlockWrapper<T>
@@ -119,9 +122,9 @@ pub enum RenderBlock {
     // #[brw(magic(3617096902u32))]
     // VegetationFoliage(RenderBlockWrapper::<VegetationFoliageRenderBlock>),
 
-    // /// HashString::from_str("Window")
-    // #[brw(magic(1528824822u32))]
-    // Window(RenderBlockWrapper::<WindowRenderBlock>),
+    /// HashString::from_str("Window")
+    #[brw(magic(1528824822u32))]
+    Window(RenderBlockWrapper::<WindowRenderBlock>),
 }
 
 #[derive(Clone, Debug, Default)]
