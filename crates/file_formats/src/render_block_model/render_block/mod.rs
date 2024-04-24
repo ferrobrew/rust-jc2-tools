@@ -26,105 +26,72 @@ mod window;
 pub use window::*;
 
 #[binrw]
-#[derive(Clone, Debug)]
-pub struct RenderBlockWrapper<T>
-where
-    T: Clone + for<'a> BinRead<Args<'a> = ()> + for<'b> BinWrite<Args<'b> = ()>,
-{
-    data: T,
-    #[brw(magic(2309737967u32))]
-    footer: (),
-}
-
-impl<T> Deref for RenderBlockWrapper<T>
-where
-    T: Clone + for<'a> BinRead<Args<'a> = ()> + for<'b> BinWrite<Args<'b> = ()>,
-{
-    type Target = T;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.data
-    }
-}
-
-impl<T> DerefMut for RenderBlockWrapper<T>
-where
-    T: Clone + for<'a> BinRead<Args<'a> = ()> + for<'b> BinWrite<Args<'b> = ()>,
-{
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.data
-    }
-}
-
-#[binrw]
 #[rustfmt::skip]
 #[derive(Clone, Debug)]
 pub enum RenderBlock {
     // /// HashString::from_str("BillboardFoliage")
     // #[brw(magic(2907872880u32))]
-    // BillboardFoliage(RenderBlockWrapper::<BillboardFoliageRenderBlock>),
+    // BillboardFoliage(BillboardFoliageRenderBlock),
 
     // /// HashString::from_str("Box")
     // #[brw(magic(1097613365u32))]
-    // Box(RenderBlockWrapper::<BoxRenderBlock>),
+    // Box(BoxRenderBlock),
 
     /// HashString::from_str("CarPaint")
     #[brw(magic(3448970869u32))]
-    CarPaint(RenderBlockWrapper::<CarPaintRenderBlock>),
+    CarPaint(CarPaintRenderBlock),
 
     /// HashString::from_str("CarPaintSimple")
     #[brw(magic(2173928592u32))]
-    CarPaintSimple(RenderBlockWrapper::<CarPaintSimpleRenderBlock>),
+    CarPaintSimple(CarPaintSimpleRenderBlock),
 
     /// HashString::from_str("DeformableWindow")
     #[brw(magic(112326146u32))]
-    DeformableWindow(RenderBlockWrapper::<DeformableWindowRenderBlock>),
+    DeformableWindow(DeformableWindowRenderBlock),
 
     // /// HashString::from_str("Facade")
     // #[brw(magic(3459897279u32))]
-    // Facade(RenderBlockWrapper::<FacadeRenderBlock>),
+    // Facade(FacadeRenderBlock),
 
     /// HashString::from_str("General")
     #[brw(magic(2807577387u32))]
-    General(RenderBlockWrapper::<GeneralRenderBlock>),
+    General(GeneralRenderBlock),
 
     // /// HashString::from_str("Halo")
     // #[brw(magic(1708766642u32))]
-    // Halo(RenderBlockWrapper::<HaloRenderBlock>),
+    // Halo(HaloRenderBlock),
 
     /// HashString::from_str("Lambert")
     #[brw(magic(3587672800u32))]
-    Lambert(RenderBlockWrapper::<LambertRenderBlock>),
+    Lambert(LambertRenderBlock),
 
     // /// HashString::from_str("Merged")
     // #[brw(magic(2441454787u32))]
-    // Merged(RenderBlockWrapper::<MergedRenderBlock>),
+    // Merged(MergedRenderBlock),
 
     // /// HashString::from_str("Occluder")
     // #[brw(magic(709121340u32))]
-    // Occluder(RenderBlockWrapper::<OccluderRenderBlock>),
+    // Occluder(OccluderRenderBlock),
 
     // /// HashString::from_str("Road")
     // #[brw(magic(1183865387u32))]
-    // Road(RenderBlockWrapper::<RoadRenderBlock>),
+    // Road(RoadRenderBlock),
 
     /// HashString::from_str("SkinnedGeneral")
     #[brw(magic(1583709984u32))]
-    SkinnedGeneral(RenderBlockWrapper::<SkinnedGeneralRenderBlock>),
+    SkinnedGeneral(SkinnedGeneralRenderBlock),
 
     // /// HashString::from_str("VegetationBark")
     // #[brw(magic(2985890621u32))]
-    // VegetationBark(RenderBlockWrapper::<VegetationBarkRenderBlock>),
+    // VegetationBark(VegetationBarkRenderBlock),
 
     // /// HashString::from_str("VegetationFoliage")
     // #[brw(magic(3617096902u32))]
-    // VegetationFoliage(RenderBlockWrapper::<VegetationFoliageRenderBlock>),
+    // VegetationFoliage(VegetationFoliageRenderBlock),
 
     /// HashString::from_str("Window")
     #[brw(magic(1528824822u32))]
-    Window(RenderBlockWrapper::<WindowRenderBlock>),
+    Window(WindowRenderBlock),
 }
 
 #[derive(Clone, Debug, Default)]
@@ -161,6 +128,14 @@ impl BinRead for RenderBlocks {
         let mut blocks = Vec::with_capacity(length as usize);
         for _ in 0..length {
             blocks.push(RenderBlock::read_options(reader, endian, ())?);
+
+            const BLOCK_FOOTER: u32 = 2309737967u32;
+            if u32::read_options(reader, endian, ())? != BLOCK_FOOTER {
+                return Err(BinError::Custom {
+                    pos: reader.stream_position()?,
+                    err: Box::new(RenderBlockError::InvalidBlockFooter),
+                });
+            }
         }
         Ok(Self(blocks))
     }

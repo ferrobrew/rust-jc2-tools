@@ -23,6 +23,8 @@ pub enum RenderBlockError {
     },
     #[error("invalid length")]
     InvalidArrayLength,
+    #[error("invalid block footer")]
+    InvalidBlockFooter,
 }
 
 #[binrw]
