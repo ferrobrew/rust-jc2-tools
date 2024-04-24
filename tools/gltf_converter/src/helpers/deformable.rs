@@ -7,7 +7,7 @@ use crate::AccessorComponentType;
 use super::{AccessorType, GltfMeshAccessor, GltfMeshAccessors, MeshSemantic};
 
 impl GltfMeshAccessors for DeformableVertex {
-    fn get_mesh_accessors() -> Vec<GltfMeshAccessor> {
+    fn accessors() -> Vec<GltfMeshAccessor> {
         let mut result = vec![(
             AccessorType::Vec3,
             AccessorComponentType::F32,
@@ -49,5 +49,28 @@ impl GltfMeshAccessors for DeformableVertex {
             bytemuck::offset_of!(DeformableVertex, uv0),
         ));
         result
+    }
+
+    fn target_accessors() -> Option<Vec<GltfMeshAccessor>> {
+        Some(vec![
+            (
+                AccessorType::Vec3,
+                AccessorComponentType::F32,
+                MeshSemantic::Positions,
+                bytemuck::offset_of!(DeformableVertex, morph_position),
+            ),
+            (
+                AccessorType::Vec3,
+                AccessorComponentType::F32,
+                MeshSemantic::Normals,
+                bytemuck::offset_of!(DeformableVertex, morph_normal),
+            ),
+            (
+                AccessorType::Vec3,
+                AccessorComponentType::F32,
+                MeshSemantic::Tangents,
+                bytemuck::offset_of!(DeformableVertex, morph_tangent),
+            ),
+        ])
     }
 }

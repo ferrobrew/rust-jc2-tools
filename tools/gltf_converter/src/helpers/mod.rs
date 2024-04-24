@@ -14,7 +14,8 @@ type MeshSemantic = gltf_json::mesh::Semantic;
 pub type GltfMeshAccessor = (AccessorType, AccessorComponentType, MeshSemantic, usize);
 
 pub trait GltfMeshAccessors {
-    fn get_mesh_accessors() -> Vec<GltfMeshAccessor>;
+    fn accessors() -> Vec<GltfMeshAccessor>;
+    fn target_accessors() -> Option<Vec<GltfMeshAccessor>>;
 }
 
 pub type GltfMeshMode = gltf_json::mesh::Mode;
@@ -32,6 +33,7 @@ pub trait GltfHelpers {
     fn textures(&self) -> [&str; 8];
     fn mesh_mode(&self) -> GltfMeshMode;
     fn accessors(&self) -> Vec<GltfMeshAccessor>;
+    fn target_accessors(&self) -> Option<Vec<GltfMeshAccessor>>;
 }
 
 fn count<T>(value: &[T]) -> usize {
@@ -48,8 +50,17 @@ fn bytes<T>(value: &[T]) -> &[u8] {
 }
 
 #[inline]
-fn accessors<T: GltfMeshAccessors>(_: &[T]) -> Vec<GltfMeshAccessor> {
-    T::get_mesh_accessors()
+fn textures(material: &Material) -> [&str; 8] {
+    [
+        material.textures[0].as_ref(),
+        material.textures[1].as_ref(),
+        material.textures[2].as_ref(),
+        material.textures[3].as_ref(),
+        material.textures[4].as_ref(),
+        material.textures[5].as_ref(),
+        material.textures[6].as_ref(),
+        material.textures[7].as_ref(),
+    ]
 }
 
 #[inline]
@@ -65,17 +76,13 @@ fn mesh_mode(material: &Material) -> GltfMeshMode {
 }
 
 #[inline]
-fn textures(material: &Material) -> [&str; 8] {
-    [
-        material.textures[0].as_ref(),
-        material.textures[1].as_ref(),
-        material.textures[2].as_ref(),
-        material.textures[3].as_ref(),
-        material.textures[4].as_ref(),
-        material.textures[5].as_ref(),
-        material.textures[6].as_ref(),
-        material.textures[7].as_ref(),
-    ]
+fn accessors<T: GltfMeshAccessors>(_: &[T]) -> Vec<GltfMeshAccessor> {
+    T::accessors()
+}
+
+#[inline]
+fn target_accessors<T: GltfMeshAccessors>(_: &[T]) -> Option<Vec<GltfMeshAccessor>> {
+    T::target_accessors()
 }
 
 impl GltfHelpers for RenderBlock {
@@ -146,13 +153,13 @@ impl GltfHelpers for RenderBlock {
     }
 
     #[inline]
-    fn accessors(&self) -> Vec<GltfMeshAccessor> {
+    fn textures(&self) -> [&str; 8] {
         match self {
-            RenderBlock::CarPaint(data) => accessors(&data.vertices),
-            RenderBlock::CarPaintSimple(data) => accessors(&data.vertices),
-            RenderBlock::General(data) => accessors(&data.vertices),
-            RenderBlock::Lambert(data) => accessors(&data.vertices),
-            RenderBlock::SkinnedGeneral(data) => accessors(&data.vertices),
+            RenderBlock::CarPaint(data) => textures(&data.material),
+            RenderBlock::CarPaintSimple(data) => textures(&data.material),
+            RenderBlock::General(data) => textures(&data.material),
+            RenderBlock::Lambert(data) => textures(&data.material),
+            RenderBlock::SkinnedGeneral(data) => textures(&data.material),
         }
     }
 
@@ -168,13 +175,24 @@ impl GltfHelpers for RenderBlock {
     }
 
     #[inline]
-    fn textures(&self) -> [&str; 8] {
+    fn accessors(&self) -> Vec<GltfMeshAccessor> {
         match self {
-            RenderBlock::CarPaint(data) => textures(&data.material),
-            RenderBlock::CarPaintSimple(data) => textures(&data.material),
-            RenderBlock::General(data) => textures(&data.material),
-            RenderBlock::Lambert(data) => textures(&data.material),
-            RenderBlock::SkinnedGeneral(data) => textures(&data.material),
+            RenderBlock::CarPaint(data) => accessors(&data.vertices),
+            RenderBlock::CarPaintSimple(data) => accessors(&data.vertices),
+            RenderBlock::General(data) => accessors(&data.vertices),
+            RenderBlock::Lambert(data) => accessors(&data.vertices),
+            RenderBlock::SkinnedGeneral(data) => accessors(&data.vertices),
+        }
+    }
+
+    #[inline]
+    fn target_accessors(&self) -> Option<Vec<GltfMeshAccessor>> {
+        match self {
+            RenderBlock::CarPaint(data) => target_accessors(&data.vertices),
+            RenderBlock::CarPaintSimple(data) => target_accessors(&data.vertices),
+            RenderBlock::General(data) => target_accessors(&data.vertices),
+            RenderBlock::Lambert(data) => target_accessors(&data.vertices),
+            RenderBlock::SkinnedGeneral(data) => target_accessors(&data.vertices),
         }
     }
 }

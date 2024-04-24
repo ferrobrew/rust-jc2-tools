@@ -5,7 +5,7 @@ use crate::AccessorComponentType;
 use super::{AccessorType, GltfMeshAccessor, GltfMeshAccessors, MeshSemantic};
 
 impl GltfMeshAccessors for GeneralVertex {
-    fn get_mesh_accessors() -> Vec<GltfMeshAccessor> {
+    fn accessors() -> Vec<GltfMeshAccessor> {
         vec![
             (
                 AccessorType::Vec3,
@@ -44,5 +44,9 @@ impl GltfMeshAccessors for GeneralVertex {
                 bytemuck::offset_of!(GeneralVertex, color),
             ),
         ]
+    }
+
+    fn target_accessors() -> Option<Vec<GltfMeshAccessor>> {
+        None
     }
 }

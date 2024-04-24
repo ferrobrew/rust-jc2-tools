@@ -5,7 +5,7 @@ use crate::AccessorComponentType;
 use super::{AccessorType, GltfMeshAccessor, GltfMeshAccessors, MeshSemantic};
 
 impl GltfMeshAccessors for SimpleVertex {
-    fn get_mesh_accessors() -> Vec<GltfMeshAccessor> {
+    fn accessors() -> Vec<GltfMeshAccessor> {
         vec![
             (
                 AccessorType::Vec3,
@@ -32,5 +32,9 @@ impl GltfMeshAccessors for SimpleVertex {
                 bytemuck::offset_of!(SimpleVertex, tangent),
             ),
         ]
+    }
+
+    fn target_accessors() -> Option<Vec<GltfMeshAccessor>> {
+        None
     }
 }

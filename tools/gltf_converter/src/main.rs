@@ -1,10 +1,6 @@
 use std::io::{Cursor, Write};
 
-use gltf_json::{
-    buffer::Stride,
-    validation::{Checked, USize64},
-    Index,
-};
+use gltf_json::{buffer::Stride, mesh::MorphTarget, validation::Checked, Index};
 use helpers::GltfMeshAccessor;
 use jc2_file_formats::render_block_model::RenderBlockModel;
 
@@ -40,18 +36,19 @@ fn create_buffer_view(
 
 type MeshPrimitive = gltf_json::mesh::Primitive;
 type Accessor = gltf_json::Accessor;
+type AccessorType = gltf_json::accessor::Type;
 type AccessorComponentType = gltf_json::accessor::ComponentType;
 type AccessorIndex = gltf_json::Index<gltf_json::Accessor>;
 
 fn create_accessor(
     root: &mut GltfRoot,
-    primitive: &mut MeshPrimitive,
     buffer_view_index: BufferViewIndex,
-    accessor: GltfMeshAccessor,
+    accessor_type: AccessorType,
+    component_type: AccessorComponentType,
+    offset: usize,
     count: usize,
 ) -> AccessorIndex {
-    let (accessor_type, component_type, semantic, offset) = accessor;
-    let accessor = root.push(Accessor {
+    root.push(Accessor {
         buffer_view: Some(buffer_view_index),
         byte_offset: Some((offset).into()),
         count: count.into(),
@@ -64,7 +61,25 @@ fn create_accessor(
         name: None,
         normalized: false,
         sparse: None,
-    });
+    })
+}
+
+fn create_attribute_accessor(
+    root: &mut GltfRoot,
+    primitive: &mut MeshPrimitive,
+    buffer_view_index: BufferViewIndex,
+    accessor: GltfMeshAccessor,
+    count: usize,
+) -> AccessorIndex {
+    let (accessor_type, component_type, semantic, offset) = accessor;
+    let accessor = create_accessor(
+        root,
+        buffer_view_index,
+        accessor_type,
+        component_type,
+        offset,
+        count,
+    );
     primitive
         .attributes
         .insert(Checked::Valid(semantic), accessor);
@@ -77,39 +92,61 @@ fn create_index_accessor(
     buffer_view_index: BufferViewIndex,
     count: usize,
 ) -> AccessorIndex {
-    let accessor = root.push(Accessor {
-        buffer_view: Some(buffer_view_index),
-        byte_offset: Some(USize64(0)),
-        count: count.into(),
-        component_type: Checked::Valid(gltf_json::accessor::GenericComponentType(
-            AccessorComponentType::U16,
-        )),
-        extensions: Default::default(),
-        extras: Default::default(),
-        type_: Checked::Valid(gltf_json::accessor::Type::Scalar),
-        min: None,
-        max: None,
-        name: None,
-        normalized: false,
-        sparse: None,
-    });
+    let accessor = create_accessor(
+        root,
+        buffer_view_index,
+        AccessorType::Scalar,
+        AccessorComponentType::U16,
+        0,
+        count,
+    );
     primitive.indices = Some(accessor);
     accessor
 }
 
-fn create_accessors(
+fn create_accessors<T: GltfHelpers>(
     root: &mut GltfRoot,
     primitive: &mut MeshPrimitive,
     buffer_view_index: BufferViewIndex,
-    accessors: &[GltfMeshAccessor],
-    count: usize,
+    block: &T,
 ) {
-    for accessor in accessors {
-        create_accessor(root, primitive, buffer_view_index, accessor.clone(), count);
+    let vertex_count = block.vertex_count();
+    for accessor in block.accessors() {
+        create_attribute_accessor(
+            root,
+            primitive,
+            buffer_view_index,
+            accessor.clone(),
+            vertex_count,
+        );
+    }
+    if let Some(target_accessors) = block.target_accessors() {
+        let mut target = MorphTarget {
+            positions: None,
+            normals: None,
+            tangents: None,
+        };
+        for (accessor_type, component_type, semantic, offset) in target_accessors {
+            let accessor = create_accessor(
+                root,
+                buffer_view_index,
+                accessor_type,
+                component_type,
+                offset,
+                vertex_count,
+            );
+            match semantic {
+                gltf::Semantic::Positions => target.positions = Some(accessor),
+                gltf::Semantic::Normals => target.normals = Some(accessor),
+                gltf::Semantic::Tangents => target.tangents = Some(accessor),
+                _ => panic!("invalid morph semantic: {semantic:?}"),
+            }
+        }
+        primitive.targets = Some(vec![target]);
     }
 }
 
-fn create_views_and_accessors<T: Clone + GltfHelpers>(
+fn create_views_and_accessors<T: GltfHelpers>(
     root: &mut GltfRoot,
     primitive: &mut MeshPrimitive,
     offset: &mut usize,
@@ -128,13 +165,7 @@ fn create_views_and_accessors<T: Clone + GltfHelpers>(
         *offset,
         stride,
     );
-    create_accessors(
-        root,
-        primitive,
-        view,
-        &block.accessors(),
-        block.vertex_count(),
-    );
+    create_accessors(root, primitive, view, block);
     *offset += length;
 
     let length = block.indices_as_bytes().len();
@@ -152,7 +183,7 @@ fn create_views_and_accessors<T: Clone + GltfHelpers>(
 }
 
 fn main() -> anyhow::Result<()> {
-    let data = include_bytes!("../res/babypanay/MC05_LOD1-BabyPanay.rbm") as &[u8];
+    let data = include_bytes!("../res/lave.v041_tractor/v041-modernbody_m_lod1.rbm") as &[u8];
     let rbm = RenderBlockModel::read(&mut Cursor::new(data))?;
 
     // First pass, calculate necessary buffer size, and round up to nearest multiple of 4

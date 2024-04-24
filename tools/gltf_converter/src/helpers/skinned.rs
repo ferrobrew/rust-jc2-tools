@@ -7,7 +7,7 @@ use crate::AccessorComponentType;
 use super::{AccessorType, GltfMeshAccessor, GltfMeshAccessors, MeshSemantic};
 
 impl GltfMeshAccessors for SkinnedVertex {
-    fn get_mesh_accessors() -> Vec<GltfMeshAccessor> {
+    fn accessors() -> Vec<GltfMeshAccessor> {
         let mut result = vec![(
             AccessorType::Vec3,
             AccessorComponentType::F32,
@@ -47,5 +47,9 @@ impl GltfMeshAccessors for SkinnedVertex {
             bytemuck::offset_of!(SkinnedVertex, uv0),
         ));
         result
+    }
+
+    fn target_accessors() -> Option<Vec<GltfMeshAccessor>> {
+        None
     }
 }
