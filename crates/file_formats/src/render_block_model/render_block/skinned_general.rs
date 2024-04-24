@@ -10,6 +10,7 @@ use crate::{
 #[brw(repr = u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub enum SkinnedGeneralVersion {
+    V1 = 1,
     #[default]
     V3 = 3,
 }
@@ -24,6 +25,7 @@ pub enum SkinnedGeneralTechnique {
     Cloth,
     Metal,
     EyeGloss,
+    Unknown,
 }
 
 bitflags! {
