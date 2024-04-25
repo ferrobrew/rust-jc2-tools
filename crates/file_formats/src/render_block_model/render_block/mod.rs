@@ -22,6 +22,12 @@ pub use lambert::*;
 mod skinned_general;
 pub use skinned_general::*;
 
+mod vegetation_bark;
+pub use vegetation_bark::*;
+
+mod vegetation_foliage;
+pub use vegetation_foliage::*;
+
 mod window;
 pub use window::*;
 
@@ -81,13 +87,13 @@ pub enum RenderBlock {
     #[brw(magic(1583709984u32))]
     SkinnedGeneral(SkinnedGeneralRenderBlock),
 
-    // /// HashString::from_str("VegetationBark")
-    // #[brw(magic(2985890621u32))]
-    // VegetationBark(VegetationBarkRenderBlock),
+    /// HashString::from_str("VegetationBark")
+    #[brw(magic(2985890621u32))]
+    VegetationBark(VegetationBarkRenderBlock),
 
-    // /// HashString::from_str("VegetationFoliage")
-    // #[brw(magic(3617096902u32))]
-    // VegetationFoliage(VegetationFoliageRenderBlock),
+    /// HashString::from_str("VegetationFoliage")
+    #[brw(magic(3617096902u32))]
+    VegetationFoliage(VegetationFoliageRenderBlock),
 
     /// HashString::from_str("Window")
     #[brw(magic(1528824822u32))]

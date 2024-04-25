@@ -15,3 +15,6 @@ pub use simple::*;
 
 mod skinned;
 pub use skinned::*;
+
+mod vegetation;
+pub use vegetation::*;
