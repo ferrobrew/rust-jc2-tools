@@ -2,7 +2,7 @@ use binrw::binrw;
 
 use super::{
     ops::{VecDot, VecLength},
-    VecType, VecTypeFloat,
+    Vec3, VecType, VecTypeFloat,
 };
 
 #[binrw]
@@ -12,6 +12,17 @@ pub struct Vec4<T: VecType> {
     pub y: T,
     pub z: T,
     pub w: T,
+}
+
+impl<T: VecType> From<Vec3<T>> for Vec4<T> {
+    fn from(value: Vec3<T>) -> Self {
+        Self {
+            x: value.x,
+            y: value.y,
+            z: value.z,
+            w: Default::default(),
+        }
+    }
 }
 
 impl<T: VecType> Vec4<T> {

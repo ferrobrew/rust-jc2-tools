@@ -2,12 +2,12 @@ use binrw::{BinRead, BinWrite};
 use num_traits::{Float, Num};
 
 pub trait VecType:
-    for<'a> BinRead<Args<'a> = ()> + for<'b> BinWrite<Args<'b> = ()> + Num + Copy
+    for<'a> BinRead<Args<'a> = ()> + for<'b> BinWrite<Args<'b> = ()> + Num + Copy + Default
 {
 }
 
 impl<T> VecType for T where
-    T: for<'a> BinRead<Args<'a> = ()> + for<'b> BinWrite<Args<'b> = ()> + Num + Copy
+    T: for<'a> BinRead<Args<'a> = ()> + for<'b> BinWrite<Args<'b> = ()> + Num + Copy + Default
 {
 }
 
