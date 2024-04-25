@@ -63,28 +63,26 @@ impl BinRead for LambertAttributes {
         endian: binrw::Endian,
         args: Self::Args<'_>,
     ) -> binrw::prelude::BinResult<Self> {
+        let version = *args.0;
         let mut result: Self = Default::default();
-
-        if args.0 == &LambertVersion::V4 {
+        if version == LambertVersion::V4 {
             result.vertex_info = VertexInfo::read_options(reader, endian, (false,))?;
         }
-
         result.flags = LambertFlags::read_options(reader, endian, ())?;
-
-        if args.0 == &LambertVersion::V0 {
+        if version == LambertVersion::V0 {
             result.flags &= LambertFlags::USE_DYNAMIC_LIGHTS;
         }
-
-        if args.0 == &LambertVersion::V3 {
+        if version != LambertVersion::V0 {
+            result.depth_bias = f32::read_options(reader, endian, ())?;
+        }
+        if version == LambertVersion::V3 {
             result.vertex_info = VertexInfo::read_options(reader, endian, (false,))?;
         }
-
-        if args.0 == &LambertVersion::V4 {
+        if version == LambertVersion::V4 {
             result.texture_channel = u8::read_options(reader, endian, ())?;
             result.ambient_occlusion_channel = u8::read_options(reader, endian, ())?;
             reader.seek(std::io::SeekFrom::Current(2))?;
         }
-
         Ok(result)
     }
 }
@@ -99,26 +97,26 @@ impl BinWrite for LambertAttributes {
         endian: binrw::Endian,
         args: Self::Args<'_>,
     ) -> binrw::prelude::BinResult<()> {
-        if matches!(args.0, LambertVersion::V4) {
+        let version = *args.0;
+        if version == LambertVersion::V4 {
             self.vertex_info.write_options(writer, endian, (false,))?;
         }
-
-        if args.0 != &LambertVersion::V0 {
+        if version != LambertVersion::V0 {
             self.flags.write_options(writer, endian, ())?;
         } else {
             (self.flags & !LambertFlags::USE_DYNAMIC_LIGHTS).write_options(writer, endian, ())?;
         }
-
-        if args.0 == &LambertVersion::V3 {
+        if version != LambertVersion::V0 {
+            self.depth_bias.write_options(writer, endian, ())?;
+        }
+        if version == LambertVersion::V3 {
             self.vertex_info.write_options(writer, endian, (false,))?;
         }
-
-        if args.0 == &LambertVersion::V4 {
+        if version == LambertVersion::V4 {
             self.texture_channel.write_options(writer, endian, ())?;
             (self.ambient_occlusion_channel).write_options(writer, endian, ())?;
             writer.write_all(&[0u8; 2])?;
         }
-
         Ok(())
     }
 }
