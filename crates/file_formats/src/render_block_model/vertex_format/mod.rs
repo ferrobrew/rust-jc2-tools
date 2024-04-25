@@ -1,6 +1,9 @@
 mod deformable;
 pub use deformable::*;
 
+mod facade;
+pub use facade::*;
+
 mod general;
 pub use general::*;
 

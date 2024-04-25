@@ -22,12 +22,34 @@ impl PackedWeightAndIndex {
         (((self.0 >> 8) & 0xFF) + 128) as u32
     }
 }
+#[binrw]
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct PackedUVF32(f32);
+
+impl From<Vec2<f32>> for PackedUVF32 {
+    #[inline]
+    fn from(value: Vec2<f32>) -> Self {
+        let x = ((value.x + 0.5).floor().abs() / 64.0).fract();
+        let y = (((value.y + 0.5).floor().abs() / 64.0) * 2048.0).fract();
+        Self(x + y)
+    }
+}
+
+impl From<PackedUVF32> for Vec2<f32> {
+    #[inline]
+    fn from(value: PackedUVF32) -> Self {
+        Self {
+            x: value.0.fract(),
+            y: value.0.floor() / 2048.0,
+        }
+    }
+}
 
 #[binrw]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
-pub struct PackedUV(i16, i16);
+pub struct PackedUVI16(i16, i16);
 
-impl From<Vec2<f32>> for PackedUV {
+impl From<Vec2<f32>> for PackedUVI16 {
     #[inline]
     fn from(value: Vec2<f32>) -> Self {
         Self(
@@ -37,9 +59,9 @@ impl From<Vec2<f32>> for PackedUV {
     }
 }
 
-impl From<PackedUV> for Vec2<f32> {
+impl From<PackedUVI16> for Vec2<f32> {
     #[inline]
-    fn from(value: PackedUV) -> Self {
+    fn from(value: PackedUVI16) -> Self {
         Self {
             x: value.0 as f32 / i16::MAX as f32,
             y: value.1 as f32 / i16::MAX as f32,
