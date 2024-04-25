@@ -7,6 +7,9 @@ pub use general::*;
 mod generic;
 pub use generic::*;
 
+mod halo;
+pub use halo::*;
+
 mod buffers;
 pub use buffers::*;
 

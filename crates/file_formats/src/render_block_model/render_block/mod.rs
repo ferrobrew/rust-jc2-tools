@@ -16,6 +16,9 @@ pub use deformable_window::*;
 mod general;
 pub use general::*;
 
+mod halo;
+pub use halo::*;
+
 mod lambert;
 pub use lambert::*;
 
@@ -33,6 +36,7 @@ pub use window::*;
 
 #[binrw]
 #[rustfmt::skip]
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
 pub enum RenderBlock {
     // /// HashString::from_str("BillboardFoliage")
@@ -63,9 +67,9 @@ pub enum RenderBlock {
     #[brw(magic(2807577387u32))]
     General(GeneralRenderBlock),
 
-    // /// HashString::from_str("Halo")
-    // #[brw(magic(1708766642u32))]
-    // Halo(HaloRenderBlock),
+    /// HashString::from_str("Halo")
+    #[brw(magic(1708766642u32))]
+    Halo(HaloRenderBlock),
 
     /// HashString::from_str("Lambert")
     #[brw(magic(3587672800u32))]

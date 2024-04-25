@@ -156,24 +156,24 @@ impl From<PackedRGB> for Vec3<f32> {
 
 #[binrw]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
-pub struct PackedRGBA(f32);
+pub struct PackedRGBAF32(f32);
 
-impl From<Vec4<f32>> for PackedRGBA {
+impl From<Vec4<f32>> for PackedRGBAF32 {
     #[inline]
     fn from(value: Vec4<f32>) -> Self {
         Self({
             let x = value.x * 1.0;
             let y = value.y * 64.0;
             let z = value.z * 4096.0;
-            let w = value.z * 262144.0;
+            let w = value.w * 262144.0;
             x + y + z + w
         })
     }
 }
 
-impl From<PackedRGBA> for Vec4<f32> {
+impl From<PackedRGBAF32> for Vec4<f32> {
     #[inline]
-    fn from(value: PackedRGBA) -> Self {
+    fn from(value: PackedRGBAF32) -> Self {
         Self {
             x: (value.0 / 1.0).fract(),
             y: (value.0 / 64.0).fract(),
@@ -182,3 +182,34 @@ impl From<PackedRGBA> for Vec4<f32> {
         }
     }
 }
+
+#[binrw]
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct PackedVec4F32(u32);
+
+impl From<Vec4<f32>> for PackedVec4F32 {
+    #[inline]
+    fn from(value: Vec4<f32>) -> Self {
+        Self({
+            let x = (value.x * 255.0) as u32;
+            let y = (value.y * 255.0) as u32;
+            let z = (value.z * 255.0) as u32;
+            let w = (value.z * 255.0) as u32;
+            x | (y << 4) | (z << 8) | (w << 12)
+        })
+    }
+}
+
+impl From<PackedVec4F32> for Vec4<f32> {
+    #[inline]
+    fn from(value: PackedVec4F32) -> Self {
+        Self {
+            x: (value.0 & 0xFF) as f32 / 255.0,
+            y: ((value.0 >> 4) & 0xFF) as f32 / 255.0,
+            z: ((value.0 >> 8) & 0xFF) as f32 / 255.0,
+            w: ((value.0 >> 12) & 0xFF) as f32 / 255.0,
+        }
+    }
+}
+
+pub type PackedRGBAU32 = PackedVec4F32;

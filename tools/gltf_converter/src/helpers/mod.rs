@@ -4,6 +4,7 @@ use jc2_file_formats::render_block_model::{Material, RenderBlock};
 
 mod deformable;
 mod general;
+mod halo;
 mod simple;
 mod skinned;
 mod vegetation;
@@ -94,6 +95,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => count(&data.vertices),
             RenderBlock::DeformableWindow(data) => count(&data.vertices),
             RenderBlock::General(data) => count(&data.vertices),
+            RenderBlock::Halo(data) => count(&data.vertices),
             RenderBlock::Lambert(data) => count(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => count(&data.vertices),
             RenderBlock::VegetationBark(data) => count(&data.vertices),
@@ -109,6 +111,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => count(&data.indices),
             RenderBlock::DeformableWindow(data) => count(&data.indices),
             RenderBlock::General(data) => count(&data.indices),
+            RenderBlock::Halo(data) => count(&data.indices),
             RenderBlock::Lambert(data) => count(&data.indices),
             RenderBlock::SkinnedGeneral(data) => count(&data.indices),
             RenderBlock::VegetationBark(data) => count(&data.indices),
@@ -124,6 +127,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => stride(&data.vertices),
             RenderBlock::DeformableWindow(data) => stride(&data.vertices),
             RenderBlock::General(data) => stride(&data.vertices),
+            RenderBlock::Halo(data) => stride(&data.vertices),
             RenderBlock::Lambert(data) => stride(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => stride(&data.vertices),
             RenderBlock::VegetationBark(data) => stride(&data.vertices),
@@ -139,6 +143,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => stride(&data.indices),
             RenderBlock::DeformableWindow(data) => stride(&data.indices),
             RenderBlock::General(data) => stride(&data.indices),
+            RenderBlock::Halo(data) => stride(&data.indices),
             RenderBlock::Lambert(data) => stride(&data.indices),
             RenderBlock::SkinnedGeneral(data) => stride(&data.indices),
             RenderBlock::VegetationBark(data) => stride(&data.indices),
@@ -154,6 +159,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => bytes(&data.vertices),
             RenderBlock::DeformableWindow(data) => bytes(&data.vertices),
             RenderBlock::General(data) => bytes(&data.vertices),
+            RenderBlock::Halo(data) => bytes(&data.vertices),
             RenderBlock::Lambert(data) => bytes(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => bytes(&data.vertices),
             RenderBlock::VegetationBark(data) => bytes(&data.vertices),
@@ -169,6 +175,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => bytes(&data.indices),
             RenderBlock::DeformableWindow(data) => bytes(&data.indices),
             RenderBlock::General(data) => bytes(&data.indices),
+            RenderBlock::Halo(data) => bytes(&data.indices),
             RenderBlock::Lambert(data) => bytes(&data.indices),
             RenderBlock::SkinnedGeneral(data) => bytes(&data.indices),
             RenderBlock::VegetationBark(data) => bytes(&data.indices),
@@ -184,6 +191,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => textures(&data.material),
             RenderBlock::DeformableWindow(data) => textures(&data.material),
             RenderBlock::General(data) => textures(&data.material),
+            RenderBlock::Halo(data) => textures(&data.material),
             RenderBlock::Lambert(data) => textures(&data.material),
             RenderBlock::SkinnedGeneral(data) => textures(&data.material),
             RenderBlock::VegetationBark(data) => textures(&data.material),
@@ -199,6 +207,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => mesh_mode(&data.material),
             RenderBlock::DeformableWindow(data) => mesh_mode(&data.material),
             RenderBlock::General(data) => mesh_mode(&data.material),
+            RenderBlock::Halo(data) => mesh_mode(&data.material),
             RenderBlock::Lambert(data) => mesh_mode(&data.material),
             RenderBlock::SkinnedGeneral(data) => mesh_mode(&data.material),
             RenderBlock::VegetationBark(data) => mesh_mode(&data.material),
@@ -214,6 +223,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => accessors(&data.vertices),
             RenderBlock::DeformableWindow(data) => accessors(&data.vertices),
             RenderBlock::General(data) => accessors(&data.vertices),
+            RenderBlock::Halo(data) => accessors(&data.vertices),
             RenderBlock::Lambert(data) => accessors(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => accessors(&data.vertices),
             RenderBlock::VegetationBark(data) => accessors(&data.vertices),
@@ -229,6 +239,7 @@ impl GltfHelpers for RenderBlock {
             RenderBlock::CarPaintSimple(data) => target_accessors(&data.vertices),
             RenderBlock::DeformableWindow(data) => target_accessors(&data.vertices),
             RenderBlock::General(data) => target_accessors(&data.vertices),
+            RenderBlock::Halo(data) => target_accessors(&data.vertices),
             RenderBlock::Lambert(data) => target_accessors(&data.vertices),
             RenderBlock::SkinnedGeneral(data) => target_accessors(&data.vertices),
             RenderBlock::VegetationBark(data) => target_accessors(&data.vertices),
