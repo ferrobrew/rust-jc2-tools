@@ -66,7 +66,7 @@ impl BinRead for LambertAttributes {
         let version = *args.0;
         let mut result: Self = Default::default();
         if version == LambertVersion::V4 {
-            result.vertex_info = VertexInfo::read_options(reader, endian, (false,))?;
+            result.vertex_info = VertexInfo::read_options(reader, endian, (true,))?;
         }
         result.flags = LambertFlags::read_options(reader, endian, ())?;
         if version == LambertVersion::V0 {
@@ -76,7 +76,7 @@ impl BinRead for LambertAttributes {
             result.depth_bias = f32::read_options(reader, endian, ())?;
         }
         if version == LambertVersion::V3 {
-            result.vertex_info = VertexInfo::read_options(reader, endian, (false,))?;
+            result.vertex_info = VertexInfo::read_options(reader, endian, (true,))?;
         }
         if version == LambertVersion::V4 {
             result.texture_channel = u8::read_options(reader, endian, ())?;
@@ -99,7 +99,7 @@ impl BinWrite for LambertAttributes {
     ) -> binrw::prelude::BinResult<()> {
         let version = *args.0;
         if version == LambertVersion::V4 {
-            self.vertex_info.write_options(writer, endian, (false,))?;
+            self.vertex_info.write_options(writer, endian, (true,))?;
         }
         if version != LambertVersion::V0 {
             self.flags.write_options(writer, endian, ())?;
@@ -110,7 +110,7 @@ impl BinWrite for LambertAttributes {
             self.depth_bias.write_options(writer, endian, ())?;
         }
         if version == LambertVersion::V3 {
-            self.vertex_info.write_options(writer, endian, (false,))?;
+            self.vertex_info.write_options(writer, endian, (true,))?;
         }
         if version == LambertVersion::V4 {
             self.texture_channel.write_options(writer, endian, ())?;
