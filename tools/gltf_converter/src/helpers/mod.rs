@@ -2,6 +2,7 @@ use std::{mem::size_of_val, slice};
 
 use jc2_file_formats::render_block_model::{Material, RenderBlock};
 
+mod billboard_foliage;
 mod deformable;
 mod facade;
 mod general;
@@ -92,6 +93,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn vertex_count(&self) -> usize {
         match self {
+            RenderBlock::BillboardFoliage(data) => count(&data.vertices),
             RenderBlock::CarPaint(data) => count(&data.vertices),
             RenderBlock::CarPaintSimple(data) => count(&data.vertices),
             RenderBlock::DeformableWindow(data) => count(&data.vertices),
@@ -109,6 +111,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn index_count(&self) -> usize {
         match self {
+            RenderBlock::BillboardFoliage(data) => count(&data.indices),
             RenderBlock::CarPaint(data) => count(&data.indices),
             RenderBlock::CarPaintSimple(data) => count(&data.indices),
             RenderBlock::DeformableWindow(data) => count(&data.indices),
@@ -126,6 +129,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn vertex_stride(&self) -> usize {
         match self {
+            RenderBlock::BillboardFoliage(data) => stride(&data.vertices),
             RenderBlock::CarPaint(data) => stride(&data.vertices),
             RenderBlock::CarPaintSimple(data) => stride(&data.vertices),
             RenderBlock::DeformableWindow(data) => stride(&data.vertices),
@@ -143,6 +147,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn index_stride(&self) -> usize {
         match self {
+            RenderBlock::BillboardFoliage(data) => stride(&data.indices),
             RenderBlock::CarPaint(data) => stride(&data.indices),
             RenderBlock::CarPaintSimple(data) => stride(&data.indices),
             RenderBlock::DeformableWindow(data) => stride(&data.indices),
@@ -160,6 +165,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn vertices_as_bytes(&self) -> &[u8] {
         match self {
+            RenderBlock::BillboardFoliage(data) => bytes(&data.vertices),
             RenderBlock::CarPaint(data) => bytes(&data.vertices),
             RenderBlock::CarPaintSimple(data) => bytes(&data.vertices),
             RenderBlock::DeformableWindow(data) => bytes(&data.vertices),
@@ -177,6 +183,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn indices_as_bytes(&self) -> &[u8] {
         match self {
+            RenderBlock::BillboardFoliage(data) => bytes(&data.indices),
             RenderBlock::CarPaint(data) => bytes(&data.indices),
             RenderBlock::CarPaintSimple(data) => bytes(&data.indices),
             RenderBlock::DeformableWindow(data) => bytes(&data.indices),
@@ -194,6 +201,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn textures(&self) -> [&str; 8] {
         match self {
+            RenderBlock::BillboardFoliage(data) => textures(&data.material),
             RenderBlock::CarPaint(data) => textures(&data.material),
             RenderBlock::CarPaintSimple(data) => textures(&data.material),
             RenderBlock::DeformableWindow(data) => textures(&data.material),
@@ -211,6 +219,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn mesh_mode(&self) -> GltfMeshMode {
         match self {
+            RenderBlock::BillboardFoliage(data) => mesh_mode(&data.material),
             RenderBlock::CarPaint(data) => mesh_mode(&data.material),
             RenderBlock::CarPaintSimple(data) => mesh_mode(&data.material),
             RenderBlock::DeformableWindow(data) => mesh_mode(&data.material),
@@ -228,6 +237,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn accessors(&self) -> Vec<GltfMeshAccessor> {
         match self {
+            RenderBlock::BillboardFoliage(data) => accessors(&data.vertices),
             RenderBlock::CarPaint(data) => accessors(&data.vertices),
             RenderBlock::CarPaintSimple(data) => accessors(&data.vertices),
             RenderBlock::DeformableWindow(data) => accessors(&data.vertices),
@@ -245,6 +255,7 @@ impl GltfHelpers for RenderBlock {
     #[inline]
     fn target_accessors(&self) -> Option<Vec<GltfMeshAccessor>> {
         match self {
+            RenderBlock::BillboardFoliage(data) => target_accessors(&data.vertices),
             RenderBlock::CarPaint(data) => target_accessors(&data.vertices),
             RenderBlock::CarPaintSimple(data) => target_accessors(&data.vertices),
             RenderBlock::DeformableWindow(data) => target_accessors(&data.vertices),

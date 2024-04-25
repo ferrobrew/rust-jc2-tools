@@ -1,3 +1,6 @@
+mod billboard_foliage;
+pub use billboard_foliage::*;
+
 mod deformable;
 pub use deformable::*;
 

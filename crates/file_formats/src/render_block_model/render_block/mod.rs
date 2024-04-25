@@ -4,6 +4,9 @@ use binrw::{binrw, BinRead, BinWrite};
 
 use super::RenderBlockError;
 
+mod billboard_foliage;
+pub use billboard_foliage::*;
+
 mod car_paint_simple;
 pub use car_paint_simple::*;
 
@@ -42,9 +45,9 @@ pub use window::*;
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
 pub enum RenderBlock {
-    // /// HashString::from_str("BillboardFoliage")
-    // #[brw(magic(2907872880u32))]
-    // BillboardFoliage(BillboardFoliageRenderBlock),
+    /// HashString::from_str("BillboardFoliage")
+    #[brw(magic(2907872880u32))]
+    BillboardFoliage(BillboardFoliageRenderBlock),
 
     // /// HashString::from_str("Box")
     // #[brw(magic(1097613365u32))]

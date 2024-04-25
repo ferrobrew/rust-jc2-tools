@@ -99,6 +99,22 @@ impl From<GenericVertex> for VegetationVertex {
     }
 }
 
+impl From<VegetationVertex> for GenericVertex {
+    #[inline]
+    fn from(value: VegetationVertex) -> Self {
+        Self {
+            position: value.position,
+            uv0: value.uv0,
+            uv1: value.uv1,
+            diffuse_color: value.color.into(),
+            normal: value.normal,
+            tangent: value.tangent,
+            binormal: value.binormal,
+            ..Default::default()
+        }
+    }
+}
+
 #[binrw]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PackedBarkVertex {
