@@ -30,7 +30,13 @@ impl Vertex for SimpleVertex {
 impl From<GenericVertex> for SimpleVertex {
     #[inline]
     fn from(value: GenericVertex) -> Self {
-        value.into()
+        Self {
+            position: value.position,
+            normal: value.normal,
+            uv0: value.uv0,
+            tangent: value.tangent,
+            binormal: value.binormal,
+        }
     }
 }
 

@@ -82,7 +82,27 @@ impl From<PackedDeformableVertex> for DeformableVertex {
 impl From<GenericVertex> for DeformableVertex {
     #[inline]
     fn from(value: GenericVertex) -> Self {
-        value.into()
+        Self {
+            position: value.position,
+            morph_position: value.morph_position,
+            bone_weights: [
+                value.bone_weights[0],
+                value.bone_weights[1],
+                value.bone_weights[2],
+                value.bone_weights[3],
+            ],
+            bone_indices: [
+                value.bone_indices[0],
+                value.bone_indices[1],
+                value.bone_indices[2],
+                value.bone_indices[3],
+            ],
+            uv0: value.uv0,
+            normal: value.normal,
+            morph_normal: value.morph_normal,
+            tangent: value.tangent,
+            morph_tangent: value.morph_tangent,
+        }
     }
 }
 
@@ -289,7 +309,28 @@ impl From<PackedLitDeformableVertex> for LitDeformableVertex {
 impl From<GenericVertex> for LitDeformableVertex {
     #[inline]
     fn from(value: GenericVertex) -> Self {
-        value.into()
+        Self {
+            position: value.position,
+            normal: value.normal,
+            tangent: value.tangent,
+            morph_position: value.morph_position,
+            morph_normal: value.morph_normal,
+            morph_tangent: value.morph_tangent,
+            uv0: value.uv0,
+            light: value.size,
+            bone_weights: [
+                value.bone_weights[0],
+                value.bone_weights[1],
+                value.bone_weights[2],
+                value.bone_weights[3],
+            ],
+            bone_indices: [
+                value.bone_indices[0],
+                value.bone_indices[1],
+                value.bone_indices[2],
+                value.bone_indices[3],
+            ],
+        }
     }
 }
 

@@ -96,7 +96,15 @@ impl BinWrite for VertexBuffer<SkinnedVertex> {
 impl From<GenericVertex> for SkinnedVertex {
     #[inline]
     fn from(value: GenericVertex) -> Self {
-        value.into()
+        Self {
+            position: value.position,
+            bone_weights: value.bone_weights,
+            bone_indices: value.bone_indices,
+            normal: value.normal,
+            tangent: value.tangent,
+            binormal: value.binormal,
+            uv0: value.uv0,
+        }
     }
 }
 
