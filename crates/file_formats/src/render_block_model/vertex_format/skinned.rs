@@ -241,7 +241,23 @@ pub struct SkinnedVertex4Position {
 impl From<SkinnedVertexPosition> for SkinnedVertex4Position {
     #[inline]
     fn from(value: SkinnedVertexPosition) -> Self {
-        value.into()
+        let bone_weights: u32 = bytemuck::must_cast([
+            (value.bone_weights[0] * 255.0) as u8,
+            (value.bone_weights[1] * 255.0) as u8,
+            (value.bone_weights[2] * 255.0) as u8,
+            (value.bone_weights[3] * 255.0) as u8,
+        ]);
+        let bone_indices: u32 = bytemuck::must_cast([
+            value.bone_weights[0] as u8,
+            value.bone_weights[1] as u8,
+            value.bone_weights[2] as u8,
+            value.bone_weights[3] as u8,
+        ]);
+        Self {
+            position: value.position,
+            bone_weights,
+            bone_indices,
+        }
     }
 }
 
@@ -256,7 +272,31 @@ pub struct SkinnedVertex8Position {
 impl From<SkinnedVertexPosition> for SkinnedVertex8Position {
     #[inline]
     fn from(value: SkinnedVertexPosition) -> Self {
-        value.into()
+        let bone_weights: [u32; 2] = bytemuck::must_cast([
+            (value.bone_weights[0] * 255.0) as u8,
+            (value.bone_weights[1] * 255.0) as u8,
+            (value.bone_weights[2] * 255.0) as u8,
+            (value.bone_weights[3] * 255.0) as u8,
+            (value.bone_weights[4] * 255.0) as u8,
+            (value.bone_weights[5] * 255.0) as u8,
+            (value.bone_weights[6] * 255.0) as u8,
+            (value.bone_weights[7] * 255.0) as u8,
+        ]);
+        let bone_indices: [u32; 2] = bytemuck::must_cast([
+            value.bone_weights[0] as u8,
+            value.bone_weights[1] as u8,
+            value.bone_weights[2] as u8,
+            value.bone_weights[3] as u8,
+            value.bone_weights[4] as u8,
+            value.bone_weights[5] as u8,
+            value.bone_weights[6] as u8,
+            value.bone_weights[7] as u8,
+        ]);
+        Self {
+            position: value.position,
+            bone_weights,
+            bone_indices,
+        }
     }
 }
 
