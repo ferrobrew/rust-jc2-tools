@@ -4,4 +4,11 @@ version = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
-bevy = { version = "0.13" }
+jc2_file_formats = { path = "../crates/file_formats" }
+
+binrw = { workspace = true }
+thiserror = { workspace = true }
+
+bevy = { version = "0.13", features = ["dds"] }
+smooth-bevy-cameras = { version = "0.11" }
+bevy_egui = { version = "0.27" }
