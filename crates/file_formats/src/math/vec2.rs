@@ -6,10 +6,39 @@ use super::{
 };
 
 #[binrw]
+#[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub struct Vec2<T: VecType> {
     pub x: T,
     pub y: T,
+}
+
+impl<T: VecTypeFloat> From<[T; 2]> for Vec2<T> {
+    #[inline]
+    fn from(a: [T; 2]) -> Self {
+        Self::new(a[0], a[1])
+    }
+}
+
+impl<T: VecTypeFloat> From<Vec2<T>> for [T; 2] {
+    #[inline]
+    fn from(v: Vec2<T>) -> Self {
+        [v.x, v.y]
+    }
+}
+
+impl<T: VecTypeFloat> From<(T, T)> for Vec2<T> {
+    #[inline]
+    fn from(t: (T, T)) -> Self {
+        Self::new(t.0, t.1)
+    }
+}
+
+impl<T: VecTypeFloat> From<Vec2<T>> for (T, T) {
+    #[inline]
+    fn from(v: Vec2<T>) -> Self {
+        (v.x, v.y)
+    }
 }
 
 impl<T: VecType> Vec2<T> {

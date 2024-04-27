@@ -8,6 +8,7 @@ use super::{
 };
 
 #[binrw]
+#[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub struct Vec3<T: VecType> {
     pub x: T,
@@ -22,6 +23,34 @@ impl<T: VecType> From<Vec4<T>> for Vec3<T> {
             y: value.y,
             z: value.z,
         }
+    }
+}
+
+impl<T: VecTypeFloat> From<[T; 3]> for Vec3<T> {
+    #[inline]
+    fn from(a: [T; 3]) -> Self {
+        Self::new(a[0], a[1], a[2])
+    }
+}
+
+impl<T: VecTypeFloat> From<Vec3<T>> for [T; 3] {
+    #[inline]
+    fn from(v: Vec3<T>) -> Self {
+        [v.x, v.y, v.z]
+    }
+}
+
+impl<T: VecTypeFloat> From<(T, T, T)> for Vec3<T> {
+    #[inline]
+    fn from(t: (T, T, T)) -> Self {
+        Self::new(t.0, t.1, t.2)
+    }
+}
+
+impl<T: VecTypeFloat> From<Vec3<T>> for (T, T, T) {
+    #[inline]
+    fn from(v: Vec3<T>) -> Self {
+        (v.x, v.y, v.z)
     }
 }
 

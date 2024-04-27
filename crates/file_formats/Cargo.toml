@@ -7,7 +7,7 @@ edition = { workspace = true }
 jc2_hashing = { path = "../hashing" }
 
 binrw = { workspace = true }
-bytemuck = { workspace = true }
 bitflags = { workspace = true }
+bytemuck = { workspace = true }
 num-traits = { workspace = true }
 thiserror = { workspace = true }
