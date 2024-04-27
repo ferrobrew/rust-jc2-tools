@@ -11,25 +11,25 @@ impl GltfMeshAccessors for SimpleVertex {
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Positions,
-                bytemuck::offset_of!(SimpleVertex, position),
+                std::mem::offset_of!(SimpleVertex, position),
             ),
             (
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Normals,
-                bytemuck::offset_of!(SimpleVertex, normal),
+                std::mem::offset_of!(SimpleVertex, normal),
             ),
             (
                 AccessorType::Vec2,
                 AccessorComponentType::F32,
                 MeshSemantic::TexCoords(0),
-                bytemuck::offset_of!(SimpleVertex, uv0),
+                std::mem::offset_of!(SimpleVertex, uv0),
             ),
             (
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Tangents,
-                bytemuck::offset_of!(SimpleVertex, tangent),
+                std::mem::offset_of!(SimpleVertex, tangent),
             ),
         ]
     }

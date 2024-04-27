@@ -11,13 +11,13 @@ impl GltfMeshAccessors for BillboardFoliageVertex {
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Positions,
-                bytemuck::offset_of!(BillboardFoliageVertex, position),
+                std::mem::offset_of!(BillboardFoliageVertex, position),
             ),
             (
                 AccessorType::Vec2,
                 AccessorComponentType::F32,
                 MeshSemantic::TexCoords(0),
-                bytemuck::offset_of!(BillboardFoliageVertex, uv0),
+                std::mem::offset_of!(BillboardFoliageVertex, uv0),
             ),
         ]
     }

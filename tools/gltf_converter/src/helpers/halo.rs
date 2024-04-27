@@ -11,19 +11,19 @@ impl GltfMeshAccessors for HaloVertex {
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Positions,
-                bytemuck::offset_of!(HaloVertex, position),
+                std::mem::offset_of!(HaloVertex, position),
             ),
             (
                 AccessorType::Vec4,
                 AccessorComponentType::F32,
                 MeshSemantic::Colors(0),
-                bytemuck::offset_of!(HaloVertex, color),
+                std::mem::offset_of!(HaloVertex, color),
             ),
             (
                 AccessorType::Vec2,
                 AccessorComponentType::F32,
                 MeshSemantic::TexCoords(0),
-                bytemuck::offset_of!(HaloVertex, uv0),
+                std::mem::offset_of!(HaloVertex, uv0),
             ),
         ]
     }

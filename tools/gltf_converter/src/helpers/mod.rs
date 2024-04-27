@@ -34,17 +34,18 @@ pub trait GltfHelpers {
     fn vertices_as_bytes(&self) -> &[u8];
     fn indices_as_bytes(&self) -> &[u8];
 
+    #[allow(dead_code)]
     fn textures(&self) -> [&str; 8];
     fn mesh_mode(&self) -> GltfMeshMode;
     fn accessors(&self) -> Vec<GltfMeshAccessor>;
     fn target_accessors(&self) -> Option<Vec<GltfMeshAccessor>>;
 }
 
-fn count<T>(value: &[T]) -> usize {
+const fn count<T>(value: &[T]) -> usize {
     value.len()
 }
 
-fn stride<T>(_: &[T]) -> usize {
+const fn stride<T>(_: &[T]) -> usize {
     std::mem::size_of::<T>()
 }
 

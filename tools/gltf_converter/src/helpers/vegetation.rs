@@ -11,37 +11,37 @@ impl GltfMeshAccessors for VegetationVertex {
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Positions,
-                bytemuck::offset_of!(VegetationVertex, position),
+                std::mem::offset_of!(VegetationVertex, position),
             ),
             (
                 AccessorType::Vec2,
                 AccessorComponentType::F32,
                 MeshSemantic::TexCoords(0),
-                bytemuck::offset_of!(VegetationVertex, uv0),
+                std::mem::offset_of!(VegetationVertex, uv0),
             ),
             (
                 AccessorType::Vec2,
                 AccessorComponentType::F32,
                 MeshSemantic::TexCoords(1),
-                bytemuck::offset_of!(VegetationVertex, uv1),
+                std::mem::offset_of!(VegetationVertex, uv1),
             ),
             (
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Colors(0),
-                bytemuck::offset_of!(VegetationVertex, color),
+                std::mem::offset_of!(VegetationVertex, color),
             ),
             (
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Normals,
-                bytemuck::offset_of!(VegetationVertex, normal),
+                std::mem::offset_of!(VegetationVertex, normal),
             ),
             (
                 AccessorType::Vec3,
                 AccessorComponentType::F32,
                 MeshSemantic::Tangents,
-                bytemuck::offset_of!(VegetationVertex, tangent),
+                std::mem::offset_of!(VegetationVertex, tangent),
             ),
         ]
     }

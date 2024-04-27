@@ -6,7 +6,6 @@ edition = { workspace = true }
 [dependencies]
 jc2_file_formats = { path = "../../crates/file_formats" }
 
-bytemuck = { workspace = true }
 thiserror = { workspace = true }
 
 anyhow = { version = "1.0" } 

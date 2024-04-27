@@ -12,39 +12,39 @@ impl GltfMeshAccessors for SkinnedVertex {
             AccessorType::Vec3,
             AccessorComponentType::F32,
             MeshSemantic::Positions,
-            bytemuck::offset_of!(SkinnedVertex, position),
+            std::mem::offset_of!(SkinnedVertex, position),
         )];
         for i in 0..8 {
             result.push((
                 AccessorType::Scalar,
                 AccessorComponentType::F32,
                 MeshSemantic::Weights(i),
-                bytemuck::offset_of!(SkinnedVertex, bone_weights) + size_of::<f32>() * i as usize,
+                std::mem::offset_of!(SkinnedVertex, bone_weights) + size_of::<f32>() * i as usize,
             ));
             result.push((
                 AccessorType::Scalar,
                 AccessorComponentType::U32,
                 MeshSemantic::Joints(i),
-                bytemuck::offset_of!(SkinnedVertex, bone_indices) + size_of::<u32>() * i as usize,
+                std::mem::offset_of!(SkinnedVertex, bone_indices) + size_of::<u32>() * i as usize,
             ));
         }
         result.push((
             AccessorType::Vec3,
             AccessorComponentType::F32,
             MeshSemantic::Normals,
-            bytemuck::offset_of!(SkinnedVertex, normal),
+            std::mem::offset_of!(SkinnedVertex, normal),
         ));
         result.push((
             AccessorType::Vec3,
             AccessorComponentType::F32,
             MeshSemantic::Tangents,
-            bytemuck::offset_of!(SkinnedVertex, tangent),
+            std::mem::offset_of!(SkinnedVertex, tangent),
         ));
         result.push((
             AccessorType::Vec2,
             AccessorComponentType::F32,
             MeshSemantic::TexCoords(0),
-            bytemuck::offset_of!(SkinnedVertex, uv0),
+            std::mem::offset_of!(SkinnedVertex, uv0),
         ));
         result
     }
