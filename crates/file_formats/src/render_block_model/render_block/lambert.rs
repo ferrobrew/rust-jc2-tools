@@ -125,7 +125,7 @@ impl BinWrite for LambertAttributes {
 #[derive(Clone, Debug, Default)]
 pub struct LambertRenderBlock {
     pub version: LambertVersion,
-    #[brw(args(&version))]
+    #[brw(args(&version.clone()))]
     pub attributes: LambertAttributes,
     pub material: Material,
     #[brw(args(attributes.vertex_info.format))]

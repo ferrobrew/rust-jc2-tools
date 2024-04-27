@@ -69,7 +69,7 @@ impl Default for GeneralAttributes {
 #[derive(Clone, Debug)]
 pub struct GeneralRenderBlock {
     pub version: GeneralVersion,
-    #[brw(args(&version))]
+    #[brw(args(&version.clone()))]
     pub attributes: GeneralAttributes,
     pub material: Material,
     #[brw(args(attributes.vertex_info.format))]
