@@ -6,7 +6,7 @@ use crate::{
         Vec2, Vec3, Vec4,
     },
     render_block_model::{
-        PackedNormalF32, PackedPosition, PackedRGBAF32, PackedUVI16, VertexFormat,
+        PackedNormalF32, PackedPosition, PackedRGBAF32, PackedTangentF32, PackedUVI16, VertexFormat,
     },
 };
 
@@ -19,7 +19,7 @@ pub struct GeneralVertex {
     pub uv0: Vec2<f32>,
     pub uv1: Vec2<f32>,
     pub normal: Vec3<f32>,
-    pub tangent: Vec3<f32>,
+    pub tangent: Vec4<f32>,
     pub color: Vec4<f32>,
 }
 
@@ -95,14 +95,13 @@ impl From<GenericVertex> for GeneralVertex {
             .cross(value.tangent)
             .dot(value.binormal)
             .signum();
-        let tangent = value.tangent * sign;
 
         Self {
             position: value.position,
             uv0: value.uv0,
             uv1: value.uv1,
             normal: value.normal,
-            tangent,
+            tangent: value.tangent.extend(sign),
             color: value.diffuse_color,
         }
     }
@@ -112,8 +111,8 @@ impl From<GeneralVertex> for GenericVertex {
     #[inline]
     fn from(value: GeneralVertex) -> Self {
         let normal: Vec3<f32> = value.normal;
-        let tangent: Vec3<f32> = value.tangent;
-        let binormal = normal.cross(tangent);
+        let tangent: Vec3<f32> = value.tangent.into();
+        let binormal = normal.cross(tangent) * value.tangent.w;
 
         Self {
             position: value.position,
@@ -135,7 +134,7 @@ pub struct GeneralVertexF32 {
     pub uv0: Vec2<f32>,
     pub uv1: Vec2<f32>,
     pub normal: PackedNormalF32,
-    pub tangent: PackedNormalF32,
+    pub tangent: PackedTangentF32,
     pub color: PackedRGBAF32,
 }
 
@@ -166,7 +165,7 @@ pub struct GeneralVertexI16 {
     pub uv0: PackedUVI16,
     pub uv1: PackedUVI16,
     pub normal: PackedNormalF32,
-    pub tangent: PackedNormalF32,
+    pub tangent: PackedTangentF32,
     pub color: PackedRGBAF32,
     #[brw(pad_after = 2)]
     pub position: PackedPosition,

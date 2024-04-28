@@ -32,7 +32,7 @@ impl GltfMeshAccessors for GeneralVertex {
                 std::mem::offset_of!(GeneralVertex, normal),
             ),
             (
-                AccessorType::Vec3,
+                AccessorType::Vec4,
                 AccessorComponentType::F32,
                 MeshSemantic::Tangents,
                 std::mem::offset_of!(GeneralVertex, tangent),

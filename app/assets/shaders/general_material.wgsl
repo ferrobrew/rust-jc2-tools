@@ -1,6 +1,9 @@
-#import bevy_pbr::mesh_view_bindings
 #import bevy_pbr::mesh_bindings
-#import bevy_pbr::mesh_functions::{get_model_matrix, mesh_position_local_to_world, mesh_position_local_to_clip, mesh_normal_local_to_world}
+#import bevy_pbr::mesh_view_bindings::view
+#import bevy_pbr::mesh_functions::{get_model_matrix, mesh_position_local_to_world, mesh_position_local_to_clip, mesh_normal_local_to_world, mesh_tangent_local_to_world}
+#import bevy_pbr::pbr_types::{PbrInput, pbr_input_new}
+#import bevy_pbr::pbr_functions::{prepare_world_normal, apply_normal_mapping, calculate_view, apply_pbr_lighting}
+#import bevy_core_pipeline::tonemapping::tone_mapping
 
 @group(2) @binding(1) var diffuse_texture: texture_2d<f32>;
 @group(2) @binding(2) var diffuse_sampler: sampler;
@@ -32,19 +35,19 @@ struct Vertex {
     @location(1) uv0: vec2<f32>,
     @location(2) uv1: vec2<f32>,
     @location(3) normal: vec3<f32>,
-    @location(4) tangent: vec3<f32>,
-    @location(5) color: vec4<f32>,
+    @location(4) tangent: vec4<f32>,
+    @location(7) color: vec4<f32>,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) world_position: vec4<f32>,
-    @location(1) uv0: vec2<f32>,
-    @location(2) uv1: vec2<f32>,
-    @location(3) world_normal: vec3<f32>,
-    @location(4) world_tangent: vec3<f32>,
-    @location(5) color: vec4<f32>,
-    @location(6) @interpolate(flat) instance_index: u32,
+    @location(0) uv0: vec2<f32>,
+    @location(1) uv1: vec2<f32>,
+    @location(2) world_normal: vec3<f32>,
+    @location(3) world_tangent: vec4<f32>,
+    @location(4) world_position: vec4<f32>,
+    @location(7) instance_index: u32,
+    @location(8) color: vec4<f32>,
 };
 
 @vertex
@@ -56,16 +59,27 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.clip_position = mesh_position_local_to_clip(model, position);
     out.world_position = mesh_position_local_to_world(model, position);
     out.uv0 = vertex.uv0 * material.uv0_scale;
-    out.uv1 = vertex.uv1 * material.uv1_scale;
+    out.uv1 = vertex.uv1 * material.uv1_scale;    
+#ifdef VERTEX_NORMALS
     out.world_normal = mesh_normal_local_to_world(vertex.normal, vertex.instance_index);
-    out.world_tangent = mesh_normal_local_to_world(vertex.tangent, vertex.instance_index);
+#endif
+#ifdef VERTEX_TANGENTS
+    out.world_tangent = mesh_tangent_local_to_world(
+        model,
+        vertex.tangent,
+        vertex.instance_index
+    );
+#endif
     out.color = vertex.color;
     out.instance_index = vertex.instance_index;
     return out;
 }
 
 @fragment
-fn fragment(input: VertexOutput) -> @location(0) vec4<f32> {
+fn fragment(
+    @builtin(front_facing) is_front: bool,
+    input: VertexOutput
+) -> @location(0) vec4<f32> {
     var diffuse_color = textureSample(diffuse_texture, diffuse_sampler, input.uv0);
 #ifdef USE_CHANNEL_TEXTURES
     diffuse_color = vec4<f32>(dot(diffuse_color, material.channel_texture_mask).xxx, 1.0);
@@ -84,5 +98,34 @@ fn fragment(input: VertexOutput) -> @location(0) vec4<f32> {
     let specular_intensity = properties.g;
     let emissive = properties.b;
 
-    return input.color * diffuse_color;
+    let double_sided = false;
+
+    var pbr_input: PbrInput = pbr_input_new();
+    pbr_input.material.base_color = input.color * diffuse_color;
+    pbr_input.frag_coord = input.clip_position;
+    pbr_input.world_position = input.world_position;
+    pbr_input.world_normal = prepare_world_normal(
+        input.world_normal,
+        double_sided,
+        is_front,
+    );
+    pbr_input.is_orthographic = view.projection[3].w == 1.0;
+    pbr_input.N = apply_normal_mapping(
+        pbr_input.material.flags,
+        input.world_normal,
+        double_sided,
+        is_front,
+#ifdef VERTEX_TANGENTS
+#ifdef STANDARD_MATERIAL_NORMAL_MAP
+        input.world_tangent,
+#endif
+#endif
+#ifdef VERTEX_UVS
+        input.uv0,
+#endif
+        view.mip_bias,
+    );
+    pbr_input.V = calculate_view(input.world_position, pbr_input.is_orthographic);
+
+    return tone_mapping(apply_pbr_lighting(pbr_input), view.color_grading);
 }

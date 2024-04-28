@@ -124,6 +124,34 @@ impl From<PackedNormalF32> for Vec3<f32> {
 
 #[binrw]
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct PackedTangentF32(f32);
+
+impl From<Vec4<f32>> for PackedTangentF32 {
+    #[inline]
+    fn from(value: Vec4<f32>) -> Self {
+        Self({
+            let x = (value.x * 0.5 + 1.0) * 1.0;
+            let y = (value.y * 0.5 + 1.0) * 256.0;
+            let z = (value.z * 0.5 + 1.0) * 65536.0;
+            (x + y + z) * value.w.signum()
+        })
+    }
+}
+
+impl From<PackedTangentF32> for Vec4<f32> {
+    #[inline]
+    fn from(value: PackedTangentF32) -> Self {
+        Self {
+            x: (value.0 / 1.0).fract() * 2.0 - 1.0,
+            y: (value.0 / 256.0).fract() * 2.0 - 1.0,
+            z: (value.0 / 65536.0).fract() * 2.0 - 1.0,
+            w: value.0.signum(),
+        }
+    }
+}
+
+#[binrw]
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub struct PackedNormalU32(u32);
 
 impl From<Vec3<f32>> for PackedNormalU32 {

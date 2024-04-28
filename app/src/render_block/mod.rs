@@ -12,8 +12,6 @@ use thiserror::Error;
 
 use jc2_file_formats::render_block_model as rbm;
 
-use crate::render_block::materials::general::ATTRIBUTE_UV1;
-
 use self::materials::{general::*, RenderBlockMaterial};
 
 pub mod materials;
@@ -90,7 +88,7 @@ impl AssetLoader for RenderBlockLoader {
                         );
 
                         macro_rules! vec_attr {
-                            ($mesh:ident, $attribute:ident, $vec:ty, $block:expr, $field:ident) => {
+                            ($mesh:ident, $attribute:expr, $vec:ty, $block:expr, $field:ident) => {
                                 $mesh.insert_attribute(
                                     $attribute,
                                     $block
@@ -104,12 +102,12 @@ impl AssetLoader for RenderBlockLoader {
 
                         mesh.insert_indices(Indices::U16(general.indices.to_vec()));
 
-                        vec_attr!(mesh, ATTRIBUTE_POSITION, Vec3, general, position);
-                        vec_attr!(mesh, ATTRIBUTE_UV0, Vec2, general, uv0);
-                        vec_attr!(mesh, ATTRIBUTE_UV1, Vec2, general, uv1);
-                        vec_attr!(mesh, ATTRIBUTE_NORMAL, Vec3, general, normal);
-                        vec_attr!(mesh, ATTRIBUTE_TANGENT, Vec3, general, tangent);
-                        vec_attr!(mesh, ATTRIBUTE_COLOR, Vec4, general, color);
+                        vec_attr!(mesh, Mesh::ATTRIBUTE_POSITION, Vec3, general, position);
+                        vec_attr!(mesh, Mesh::ATTRIBUTE_UV_0, Vec2, general, uv0);
+                        vec_attr!(mesh, Mesh::ATTRIBUTE_UV_1, Vec2, general, uv1);
+                        vec_attr!(mesh, Mesh::ATTRIBUTE_NORMAL, Vec3, general, normal);
+                        vec_attr!(mesh, Mesh::ATTRIBUTE_TANGENT, Vec4, general, tangent);
+                        vec_attr!(mesh, Mesh::ATTRIBUTE_COLOR, Vec4, general, color);
 
                         let parent = load_context.path().parent().unwrap().to_path_buf();
                         let textures = &general.material.textures;

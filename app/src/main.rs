@@ -1,4 +1,4 @@
-use bevy::{asset::LoadState, prelude::*};
+use bevy::{asset::LoadState, pbr::CascadeShadowConfigBuilder, prelude::*};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use render_block::{RenderBlockMesh, RenderBlockPlugin};
@@ -43,6 +43,20 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             pitch: Some(45.0_f32.to_radians()),
             ..default()
         });
+
+    commands.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            shadows_enabled: true,
+            ..default()
+        },
+        cascade_shadow_config: CascadeShadowConfigBuilder {
+            num_cascades: 1,
+            maximum_distance: 1.6,
+            ..default()
+        }
+        .into(),
+        ..default()
+    });
 
     let mesh = asset_server.load("sharkatron/go701_lod1-a.rbm");
     commands.spawn(RenderBlockBundle { mesh, ..default() });

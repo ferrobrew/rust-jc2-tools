@@ -68,6 +68,16 @@ impl<T: VecType> Vec3<T> {
             z: value,
         }
     }
+
+    #[inline]
+    pub const fn extend(&self, w: T) -> Vec4<T> {
+        Vec4 {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+            w,
+        }
+    }
 }
 
 impl<T: VecType> Add<Vec3<T>> for Vec3<T> {

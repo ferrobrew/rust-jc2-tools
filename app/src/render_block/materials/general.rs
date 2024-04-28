@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::{mesh::MeshVertexAttribute, render_asset::*, render_resource::*},
+    render::{render_asset::*, render_resource::*},
 };
 use jc2_file_formats::render_block_model::{GeneralAttributes, GeneralFlags};
 
@@ -61,11 +61,6 @@ pub struct RenderBlockGeneralMaterial {
     #[dependency]
     pub diffuse_texture: Option<Handle<Image>>,
 
-    #[texture(3)]
-    #[sampler(4)]
-    #[dependency]
-    pub normal_texture: Option<Handle<Image>>,
-
     #[texture(5)]
     #[sampler(6)]
     #[dependency]
@@ -75,6 +70,11 @@ pub struct RenderBlockGeneralMaterial {
     #[sampler(8)]
     #[dependency]
     pub dirt_color_texture: Option<Handle<Image>>,
+
+    #[texture(9)]
+    #[sampler(10)]
+    #[dependency]
+    pub normal_texture: Option<Handle<Image>>,
 
     pub scale: f32,
     pub specular_power: f32,
@@ -134,24 +134,6 @@ impl From<&GeneralAttributes> for RenderBlockGeneralMaterial {
     }
 }
 
-pub const ATTRIBUTE_POSITION: MeshVertexAttribute =
-    MeshVertexAttribute::new("Position", 4250932154, VertexFormat::Float32x3);
-
-pub const ATTRIBUTE_UV0: MeshVertexAttribute =
-    MeshVertexAttribute::new("UV0", 3070075345, VertexFormat::Float32x2);
-
-pub const ATTRIBUTE_UV1: MeshVertexAttribute =
-    MeshVertexAttribute::new("UV1", 615186204, VertexFormat::Float32x2);
-
-pub const ATTRIBUTE_NORMAL: MeshVertexAttribute =
-    MeshVertexAttribute::new("Normal", 3848509694, VertexFormat::Float32x3);
-
-pub const ATTRIBUTE_TANGENT: MeshVertexAttribute =
-    MeshVertexAttribute::new("Tangent", 2959512384, VertexFormat::Float32x3);
-
-pub const ATTRIBUTE_COLOR: MeshVertexAttribute =
-    MeshVertexAttribute::new("Color", 1706632676, VertexFormat::Float32x4);
-
 impl Material for RenderBlockGeneralMaterial {
     #[inline]
     fn vertex_shader() -> ShaderRef {
@@ -189,27 +171,27 @@ impl Material for RenderBlockGeneralMaterial {
         key: bevy::pbr::MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         let vertex_layout = layout.get_layout(&[
-            ATTRIBUTE_POSITION.at_shader_location(0),
-            ATTRIBUTE_UV0.at_shader_location(1),
-            ATTRIBUTE_UV1.at_shader_location(2),
-            ATTRIBUTE_NORMAL.at_shader_location(3),
-            ATTRIBUTE_TANGENT.at_shader_location(4),
-            ATTRIBUTE_COLOR.at_shader_location(5),
+            Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
+            Mesh::ATTRIBUTE_UV_0.at_shader_location(1),
+            Mesh::ATTRIBUTE_UV_1.at_shader_location(2),
+            Mesh::ATTRIBUTE_NORMAL.at_shader_location(3),
+            Mesh::ATTRIBUTE_TANGENT.at_shader_location(4),
+            Mesh::ATTRIBUTE_COLOR.at_shader_location(7),
         ])?;
         descriptor.vertex.buffers = vec![vertex_layout];
 
         if let Some(fragment) = descriptor.fragment.as_mut() {
             let shader_defs = &mut fragment.shader_defs;
+
             if key.bind_group_data.use_snow {
                 shader_defs.push("USE_CHANNEL_TEXTURES".into());
             }
-        }
 
-        if let Some(fragment) = descriptor.fragment.as_mut() {
-            let shader_defs = &mut fragment.shader_defs;
             if key.bind_group_data.use_snow {
                 shader_defs.push("USE_SNOW".into());
             }
+
+            shader_defs.push("STANDARD_MATERIAL_NORMAL_MAP".into());
         }
 
         if key.bind_group_data.cull {
