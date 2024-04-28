@@ -1,11 +1,14 @@
+use std::path::PathBuf;
+
 use bevy::{
-    asset::{AssetLoader, AsyncReadExt},
+    asset::{AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
         render_asset::RenderAssetUsages,
+        render_resource::{AddressMode, FilterMode, SamplerDescriptor},
         renderer::RenderDevice,
-        texture::CompressedImageFormats,
+        texture::{CompressedImageFormats, ImageLoaderSettings, ImageSampler},
     },
 };
 use thiserror::Error;
@@ -114,12 +117,49 @@ impl AssetLoader for RenderBlockLoader {
 
                         let mut material = RenderBlockGeneralMaterial::from(&general.attributes);
 
-                        material.diffuse_texture =
-                            Some(load_context.load(parent.join(textures[0].as_ref())));
-                        material.normal_texture =
-                            Some(load_context.load(parent.join(textures[1].as_ref())));
-                        material.properties_texture =
-                            Some(load_context.load(parent.join(textures[2].as_ref())));
+                        fn load_image(
+                            load_context: &mut LoadContext,
+                            path: impl Into<PathBuf>,
+                            is_srgb: bool,
+                        ) -> Handle<Image> {
+                            load_context.load_with_settings(
+                                path.into(),
+                                move |settings: &mut ImageLoaderSettings| {
+                                    settings.is_srgb = is_srgb;
+                                    settings.sampler = ImageSampler::Descriptor(
+                                        SamplerDescriptor {
+                                            address_mode_u: AddressMode::Repeat,
+                                            address_mode_v: AddressMode::Repeat,
+                                            address_mode_w: AddressMode::Repeat,
+                                            mag_filter: FilterMode::Linear,
+                                            min_filter: FilterMode::Linear,
+                                            mipmap_filter: FilterMode::Linear,
+                                            anisotropy_clamp: 16,
+                                            lod_min_clamp: 0.0,
+                                            lod_max_clamp: 0.0,
+                                            ..default()
+                                        }
+                                        .into(),
+                                    );
+                                },
+                            )
+                        }
+
+                        material.diffuse_texture = Some(load_image(
+                            load_context,
+                            parent.join(textures[0].as_ref()),
+                            true,
+                        ));
+                        material.normal_texture = Some(load_image(
+                            load_context,
+                            parent.join(textures[1].as_ref()),
+                            false,
+                        ));
+                        material.properties_texture = Some(load_image(
+                            load_context,
+                            parent.join(textures[2].as_ref()),
+                            false,
+                        ));
 
                         let mesh = load_context.add_labeled_asset("Mesh".to_string(), mesh);
                         let material = load_context
