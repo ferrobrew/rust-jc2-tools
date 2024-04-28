@@ -1,14 +1,10 @@
 use bevy::{asset::LoadState, prelude::*};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use render_block::{RenderBlockMesh, RenderBlockPlugin};
-use smooth_bevy_cameras::{
-    controllers::orbit::{OrbitCameraBundle, OrbitCameraController, OrbitCameraPlugin},
-    LookTransformPlugin,
-};
 
 use crate::render_block::materials::RenderBlockMaterial;
 
-mod camera;
 mod render_block;
 
 #[derive(Bundle, Default)]
@@ -20,33 +16,33 @@ pub struct RenderBlockBundle {
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins,
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "JC2 Tools".into(),
+                    position: WindowPosition::Centered(MonitorSelection::Primary),
+                    ..default()
+                }),
+                ..default()
+            }),
             RenderBlockPlugin,
             EguiPlugin,
-            LookTransformPlugin,
-            OrbitCameraPlugin::default(),
+            PanOrbitCameraPlugin,
         ))
         .add_systems(Startup, setup)
         .add_systems(PreUpdate, render_block_loader)
         .add_systems(Update, ui_example_system)
-        .add_systems(Update, camera::camera_input)
         .run();
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(Camera3dBundle::default())
-        .insert(OrbitCameraBundle::new(
-            OrbitCameraController {
-                mouse_rotate_sensitivity: Vec2::splat(0.8),
-                mouse_translate_sensitivity: Vec2::splat(1.0),
-                mouse_wheel_zoom_sensitivity: 0.1,
-                ..default()
-            },
-            Vec3::new(7.5, 5.0, 7.5),
-            Vec3::new(0., 0., 0.),
-            Vec3::Y,
-        ));
+        .insert(PanOrbitCamera {
+            radius: Some(7.0),
+            yaw: Some(45.0_f32.to_radians()),
+            pitch: Some(45.0_f32.to_radians()),
+            ..default()
+        });
 
     let mesh = asset_server.load("sharkatron/go701_lod1-a.rbm");
     commands.spawn(RenderBlockBundle { mesh, ..default() });
