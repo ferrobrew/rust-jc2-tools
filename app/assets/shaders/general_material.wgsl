@@ -100,6 +100,9 @@ fn fragment(
 
     var pbr_input: PbrInput = pbr_input_new();
     pbr_input.material.base_color = input.color * diffuse_color;
+    pbr_input.material.metallic = saturate(specular_intensity * material.specular_power * reflection);
+    pbr_input.material.reflectance = saturate(reflection);
+    pbr_input.material.emissive = vec4<f32>(emissive);
     pbr_input.frag_coord = input.clip_position;
     pbr_input.world_position = input.world_position;
     pbr_input.world_normal = prepare_world_normal(
