@@ -61,6 +61,11 @@ pub struct RenderBlockGeneralMaterial {
     #[dependency]
     pub diffuse_texture: Option<Handle<Image>>,
 
+    #[texture(3)]
+    #[sampler(4)]
+    #[dependency]
+    pub normal_texture: Option<Handle<Image>>,
+
     #[texture(5)]
     #[sampler(6)]
     #[dependency]
@@ -70,11 +75,6 @@ pub struct RenderBlockGeneralMaterial {
     #[sampler(8)]
     #[dependency]
     pub dirt_color_texture: Option<Handle<Image>>,
-
-    #[texture(9)]
-    #[sampler(10)]
-    #[dependency]
-    pub normal_texture: Option<Handle<Image>>,
 
     pub scale: f32,
     pub specular_power: f32,
@@ -192,6 +192,7 @@ impl Material for RenderBlockGeneralMaterial {
             }
 
             shader_defs.push("STANDARD_MATERIAL_NORMAL_MAP".into());
+            shader_defs.push("STANDARD_MATERIAL_FLAGS_FLIP_NORMAL_MAP_Y".into());
         }
 
         if key.bind_group_data.cull {

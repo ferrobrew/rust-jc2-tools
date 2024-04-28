@@ -114,10 +114,11 @@ impl From<Vec3<f32>> for PackedNormalF32 {
 impl From<PackedNormalF32> for Vec3<f32> {
     #[inline]
     fn from(value: PackedNormalF32) -> Self {
+        let n = value.0.abs();
         Self {
-            x: (value.0 / 1.0).fract() * 2.0 - 1.0,
-            y: (value.0 / 256.0).fract() * 2.0 - 1.0,
-            z: (value.0 / 65536.0).fract() * 2.0 - 1.0,
+            x: (n / 1.0).fract() * 2.0 - 1.0,
+            y: (n / 256.0).fract() * 2.0 - 1.0,
+            z: (n / 65536.0).fract() * 2.0 - 1.0,
         }
     }
 }
@@ -141,11 +142,13 @@ impl From<Vec4<f32>> for PackedTangentF32 {
 impl From<PackedTangentF32> for Vec4<f32> {
     #[inline]
     fn from(value: PackedTangentF32) -> Self {
+        let n = value.0.abs();
+        let w = value.0.signum();
         Self {
-            x: (value.0 / 1.0).fract() * 2.0 - 1.0,
-            y: (value.0 / 256.0).fract() * 2.0 - 1.0,
-            z: (value.0 / 65536.0).fract() * 2.0 - 1.0,
-            w: value.0.signum(),
+            x: (n / 1.0).fract() * 2.0 - 1.0,
+            y: (n / 256.0).fract() * 2.0 - 1.0,
+            z: (n / 65536.0).fract() * 2.0 - 1.0,
+            w,
         }
     }
 }

@@ -5,19 +5,6 @@
 #import bevy_pbr::pbr_functions::{prepare_world_normal, apply_normal_mapping, calculate_view, apply_pbr_lighting}
 #import bevy_core_pipeline::tonemapping::tone_mapping
 
-@group(2) @binding(1) var diffuse_texture: texture_2d<f32>;
-@group(2) @binding(2) var diffuse_sampler: sampler;
-
-@group(2) @binding(3) var normal_texture: texture_2d<f32>;
-@group(2) @binding(4) var normal_sampler: sampler;
-
-@group(2) @binding(5) var properties_texture: texture_2d<f32>;
-@group(2) @binding(6) var properties_sampler: sampler;
-
-@group(2) @binding(7) var dirt_color_texture: texture_2d<f32>;
-@group(2) @binding(8) var dirt_color_sampler: sampler;
-
-
 struct Material {
     scale: f32,
     specular_power: f32,
@@ -26,8 +13,6 @@ struct Material {
     channel_texture_mask: vec4<f32>,
     channel_ambient_occlusion_mask: vec4<f32>,
 };
-
-@group(2) @binding(0) var<uniform> material: Material;
 
 struct Vertex {
     @builtin(instance_index) instance_index: u32,
@@ -49,6 +34,20 @@ struct VertexOutput {
     @location(7) instance_index: u32,
     @location(8) color: vec4<f32>,
 };
+
+@group(2) @binding(0) var<uniform> material: Material;
+
+@group(2) @binding(1) var diffuse_texture: texture_2d<f32>;
+@group(2) @binding(2) var diffuse_sampler: sampler;
+
+@group(2) @binding(3) var normal_texture: texture_2d<f32>;
+@group(2) @binding(4) var normal_sampler: sampler;
+
+@group(2) @binding(5) var properties_texture: texture_2d<f32>;
+@group(2) @binding(6) var properties_sampler: sampler;
+
+@group(2) @binding(7) var dirt_color_texture: texture_2d<f32>;
+@group(2) @binding(8) var dirt_color_sampler: sampler;
 
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
@@ -97,7 +96,6 @@ fn fragment(
     let reflection = properties.r;
     let specular_intensity = properties.g;
     let emissive = properties.b;
-
     let double_sided = false;
 
     var pbr_input: PbrInput = pbr_input_new();
@@ -110,21 +108,26 @@ fn fragment(
         is_front,
     );
     pbr_input.is_orthographic = view.projection[3].w == 1.0;
-    pbr_input.N = apply_normal_mapping(
-        pbr_input.material.flags,
-        input.world_normal,
-        double_sided,
-        is_front,
+
+    var N: vec3<f32> = input.world_normal;
+
 #ifdef VERTEX_TANGENTS
-#ifdef STANDARD_MATERIAL_NORMAL_MAP
-        input.world_tangent,
-#endif
-#endif
 #ifdef VERTEX_UVS
-        input.uv0,
+#ifdef STANDARD_MATERIAL_NORMAL_MAP
+    var T: vec3<f32> = input.world_tangent.xyz;
+    var B: vec3<f32> = cross(N, T) * input.world_tangent.w;
+    var Nt: vec3<f32> = normalize(textureSampleBias(normal_texture, normal_sampler, input.uv0, view.mip_bias).rgb * 2.0 - 1.0);
+
+    if double_sided && !is_front {
+        Nt = -Nt;
+    }
+
+    N = Nt.x * T + Nt.y * B + Nt.z * N;
 #endif
-        view.mip_bias,
-    );
+#endif
+#endif
+
+    pbr_input.N = N;
     pbr_input.V = calculate_view(input.world_position, pbr_input.is_orthographic);
 
     return tone_mapping(apply_pbr_lighting(pbr_input), view.color_grading);
