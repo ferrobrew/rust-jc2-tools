@@ -64,7 +64,7 @@ impl Default for WireframeNormalsConfig {
 
 type TransformableMesh<'a> = (
     &'a Handle<Mesh>,
-    &'a Transform,
+    &'a GlobalTransform,
     Option<&'a WireframeNormalColors>,
 );
 
@@ -110,23 +110,24 @@ fn draw_wireframe_normals(
                         (positions[i].into(), normals[i].into(), tangents[i].into());
 
                     let flipped = tangent.w;
-                    let position = transform.transform_point(position);
+                    let matrix = transform.compute_matrix();
+                    let position = matrix.transform_point(position);
 
-                    let normal = transform.rotation * normal;
+                    let normal = matrix.transform_vector3(normal);
                     gizmos.arrow(
                         position,
                         position + (normal.normalize() * config.length),
                         normal_color,
                     );
 
-                    let tangent = transform.rotation * tangent.xyz();
+                    let tangent = matrix.transform_vector3(tangent.xyz());
                     gizmos.arrow(
                         position,
                         position + (tangent.normalize() * config.length),
                         tangent_color,
                     );
 
-                    let binormal = normal.cross(tangent) * flipped;
+                    let binormal = matrix.transform_vector3(normal.cross(tangent) * flipped);
                     gizmos.arrow(
                         position,
                         position + (binormal.normalize() * config.length),
