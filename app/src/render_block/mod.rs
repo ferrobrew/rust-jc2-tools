@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use bevy::{
-    asset::{AssetLoader, AsyncReadExt, LoadContext, LoadState},
+    asset::{AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
@@ -10,6 +10,7 @@ use bevy::{
         renderer::RenderDevice,
         texture::{CompressedImageFormats, ImageLoaderSettings, ImageSampler},
     },
+    utils::HashSet,
 };
 use thiserror::Error;
 
@@ -40,6 +41,16 @@ pub struct RenderBlockPrimitive {
 #[derive(Asset, Debug, Clone, TypePath)]
 pub struct RenderBlockMesh {
     pub primitives: Vec<RenderBlockPrimitive>,
+}
+
+#[derive(Bundle, Default)]
+pub struct RenderBlockBundle {
+    pub mesh: Handle<RenderBlockMesh>,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    pub visibility: Visibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
 #[derive(Default)]
@@ -214,24 +225,42 @@ impl Plugin for RenderBlockPlugin {
 
 fn spawn_mesh_system(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    render_block_assets: Res<Assets<RenderBlockMesh>>,
+    mut events: EventReader<AssetEvent<RenderBlockMesh>>,
+    assets: Res<Assets<RenderBlockMesh>>,
     query: Query<(Entity, &Handle<RenderBlockMesh>)>,
 ) {
-    for (entity, handle) in query.iter() {
-        if asset_server.load_state(handle) == LoadState::Loaded {
-            if let Some(mesh) = render_block_assets.get(handle) {
-                for primitive in mesh.primitives.iter() {
-                    commands.spawn(MaterialMeshBundle {
-                        mesh: primitive.mesh.clone(),
-                        material: match primitive.material.clone() {
-                            RenderBlockMaterial::General(material) => material,
-                        },
-                        ..default()
-                    });
-                }
+    let mut loaded = HashSet::with_capacity(events.len());
+    for event in events.read() {
+        match event {
+            AssetEvent::Added { id }
+            | AssetEvent::Modified { id }
+            | AssetEvent::LoadedWithDependencies { id } => {
+                loaded.insert_unique_unchecked(*id);
             }
-            commands.entity(entity).remove::<Handle<RenderBlockMesh>>();
+            _ => {}
+        }
+    }
+    for (entity, handle) in query.iter() {
+        if loaded.contains(&handle.id()) {
+            commands.entity(entity).despawn_descendants();
+            if let Some(mesh) = assets.get(handle) {
+                let children: Vec<Entity> = mesh
+                    .primitives
+                    .iter()
+                    .map(|primitive| {
+                        commands
+                            .spawn(MaterialMeshBundle {
+                                mesh: primitive.mesh.clone(),
+                                material: match primitive.material.clone() {
+                                    RenderBlockMaterial::General(material) => material,
+                                },
+                                ..default()
+                            })
+                            .id()
+                    })
+                    .collect();
+                commands.entity(entity).push_children(&children);
+            }
         }
     }
 }

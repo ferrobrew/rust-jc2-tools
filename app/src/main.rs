@@ -8,16 +8,10 @@ use bevy::{
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use debug::wireframe::{WireframeNormalsConfig, WireframeNormalsPlugin};
-use render_block::{RenderBlockMesh, RenderBlockPlugin};
+use render_block::{RenderBlockBundle, RenderBlockPlugin};
 
 mod debug;
 mod render_block;
-
-#[derive(Bundle, Default)]
-pub struct RenderBlockBundle {
-    mesh: Handle<RenderBlockMesh>,
-    transform: Transform,
-}
 
 fn main() {
     App::new()
