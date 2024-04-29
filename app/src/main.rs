@@ -13,6 +13,13 @@ use render_block::{RenderBlockBundle, RenderBlockPlugin};
 mod debug;
 mod render_block;
 
+#[derive(Resource, Debug, Clone, Default, Reflect)]
+#[reflect(Resource)]
+pub struct AppData {
+    pub file: String,
+    pub model: Option<Entity>,
+}
+
 fn main() {
     App::new()
         .add_plugins((
@@ -34,12 +41,20 @@ fn main() {
             default_color: Color::WHITE,
             ..default()
         })
+        .insert_resource(AppData {
+            file: "landmarks/Landmark_LOD1-KEY001.rbm".into(),
+            ..default()
+        })
         .add_systems(Startup, startup_system)
         .add_systems(Update, user_interface_system)
         .run();
 }
 
-fn startup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn startup_system(
+    mut app_data: ResMut<AppData>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
     commands
         .spawn(Camera3dBundle::default())
         .insert(PanOrbitCamera {
@@ -69,11 +84,20 @@ fn startup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         ..default()
     });
 
-    let mesh = asset_server.load("traincar01/gp040_lod1-a.rbm");
-    commands.spawn(RenderBlockBundle { mesh, ..default() });
+    app_data.model = Some(
+        commands
+            .spawn(RenderBlockBundle {
+                mesh: asset_server.load(&app_data.file),
+                ..default()
+            })
+            .id(),
+    );
 }
 
 fn user_interface_system(
+    mut app_data: ResMut<AppData>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut contexts: EguiContexts,
     mut wireframes: ResMut<WireframeConfig>,
     mut normals: ResMut<WireframeNormalsConfig>,
@@ -81,7 +105,16 @@ fn user_interface_system(
 ) {
     egui::Window::new("Settings").show(contexts.ctx_mut(), |ui| {
         ui.checkbox(&mut wireframes.global, "Wireframes");
+
         ui.checkbox(&mut normals.global, "Normals");
+        if normals.global {
+            ui.add(
+                egui::Slider::new(&mut normals.length, 0.01..=0.1)
+                    .text("Normals Length")
+                    .custom_formatter(|n, _| format!("{n:.3}")),
+            );
+        }
+
         ui.label("Directional Light");
         for (mut transform, _light) in &mut query {
             let (mut x, mut y, mut z) = transform.rotation.to_euler(EulerRot::XYZ);
@@ -89,6 +122,21 @@ fn user_interface_system(
             ui.drag_angle(&mut y);
             ui.drag_angle(&mut z);
             transform.rotation = Quat::from_euler(EulerRot::XYZ, x, y, z);
+        }
+
+        ui.text_edit_singleline(&mut app_data.file);
+        if ui.button("Load File").clicked() {
+            if let Some(model) = app_data.model {
+                commands.entity(model).despawn_recursive();
+            }
+            app_data.model = Some(
+                commands
+                    .spawn(RenderBlockBundle {
+                        mesh: asset_server.load(&app_data.file),
+                        ..default()
+                    })
+                    .id(),
+            );
         }
     });
 }
