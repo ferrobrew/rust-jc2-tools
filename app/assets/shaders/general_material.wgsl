@@ -80,7 +80,7 @@ fn fragment(
 ) -> @location(0) vec4<f32> {
     var diffuse_color = textureSample(diffuse_texture, diffuse_sampler, input.uv0);
 #ifdef USE_CHANNEL_TEXTURES
-    diffuse_color = vec4<f32>(dot(diffuse_color, material.channel_texture_mask).xxx, 1.0);
+    diffuse_color = vec4<f32>(vec3<f32>(dot(diffuse_color, material.channel_texture_mask)), 1.0);
 #endif
     diffuse_color *= vec4<f32>(input.color.rgb, 1.0);
 
