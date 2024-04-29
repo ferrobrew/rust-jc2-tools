@@ -26,7 +26,6 @@ impl From<&RenderBlockGeneralMaterial> for RenderBlockGeneralMaterialKey {
 
 #[derive(Clone, Default, ShaderType)]
 pub struct RenderBlockGeneralMaterialUniform {
-    pub scale: f32,
     pub specular_power: f32,
     pub uv0_scale: Vec2,
     pub uv1_scale: Vec2,
@@ -41,7 +40,6 @@ impl AsBindGroupShaderType<RenderBlockGeneralMaterialUniform> for RenderBlockGen
         _images: &RenderAssets<Image>,
     ) -> RenderBlockGeneralMaterialUniform {
         RenderBlockGeneralMaterialUniform {
-            scale: self.scale,
             specular_power: self.specular_power,
             uv0_scale: self.uv0_scale,
             uv1_scale: self.uv1_scale,

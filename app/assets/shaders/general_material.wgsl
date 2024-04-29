@@ -6,7 +6,6 @@
 #import bevy_core_pipeline::tonemapping::tone_mapping
 
 struct Material {
-    scale: f32,
     specular_power: f32,
     uv0_scale: vec2<f32>,
     uv1_scale: vec2<f32>,
@@ -52,7 +51,7 @@ struct VertexOutput {
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     let model = get_model_matrix(vertex.instance_index);
-    let position = vec4<f32>(vertex.position * material.scale, 1.0);
+    let position = vec4<f32>(vertex.position, 1.0);
 
     var out: VertexOutput;
     out.clip_position = mesh_position_local_to_clip(model, position);

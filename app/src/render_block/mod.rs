@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use bevy::{
-    asset::{AssetLoader, AsyncReadExt, LoadContext},
+    asset::{AssetLoader, AsyncReadExt, LoadContext, LoadState},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
@@ -44,6 +44,7 @@ pub struct RenderBlockMesh {
 
 #[derive(Default)]
 struct RenderBlockLoader {
+    #[allow(dead_code)]
     pub supported_compressed_formats: CompressedImageFormats,
 }
 
@@ -189,6 +190,9 @@ impl Plugin for RenderBlockPlugin {
         app.init_asset::<RenderBlockPrimitive>()
             .init_asset::<RenderBlockMesh>()
             .add_plugins(MaterialPlugin::<RenderBlockGeneralMaterial>::default())
+            .add_systems(PreUpdate, spawn_mesh_system)
+            .add_systems(PreUpdate, general_material_changed)
+            .add_systems(PreUpdate, general_material_transform_changed)
             .preregister_asset_loader::<RenderBlockLoader>(&["rbm"]);
     }
 
@@ -200,5 +204,57 @@ impl Plugin for RenderBlockPlugin {
         app.register_asset_loader(RenderBlockLoader {
             supported_compressed_formats,
         });
+    }
+}
+
+fn spawn_mesh_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    render_block_assets: Res<Assets<RenderBlockMesh>>,
+    query: Query<(Entity, &Handle<RenderBlockMesh>)>,
+) {
+    for (entity, handle) in query.iter() {
+        if asset_server.load_state(handle) == LoadState::Loaded {
+            if let Some(mesh) = render_block_assets.get(handle) {
+                for primitive in mesh.primitives.iter() {
+                    commands.spawn(MaterialMeshBundle {
+                        mesh: primitive.mesh.clone(),
+                        material: match primitive.material.clone() {
+                            RenderBlockMaterial::General(material) => material,
+                        },
+                        ..default()
+                    });
+                }
+            }
+            commands.entity(entity).remove::<Handle<RenderBlockMesh>>();
+        }
+    }
+}
+
+fn general_material_changed(
+    materials: Res<Assets<RenderBlockGeneralMaterial>>,
+    mut materials_changed: Query<
+        (&Handle<RenderBlockGeneralMaterial>, &mut Transform),
+        Changed<Handle<RenderBlockGeneralMaterial>>,
+    >,
+) {
+    for (handle, mut transform) in &mut materials_changed {
+        if let Some(material) = materials.get(handle) {
+            transform.scale = Vec3::splat(material.scale);
+        }
+    }
+}
+
+fn general_material_transform_changed(
+    mut materials: ResMut<Assets<RenderBlockGeneralMaterial>>,
+    mut transforms_changed: Query<
+        (&Handle<RenderBlockGeneralMaterial>, &Transform),
+        Changed<Transform>,
+    >,
+) {
+    for (handle, transform) in &mut transforms_changed {
+        if let Some(material) = materials.get_mut(handle) {
+            material.scale = transform.scale.length_squared() / 3.0;
+        }
     }
 }
