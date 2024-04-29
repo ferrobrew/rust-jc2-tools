@@ -190,9 +190,14 @@ impl Plugin for RenderBlockPlugin {
         app.init_asset::<RenderBlockPrimitive>()
             .init_asset::<RenderBlockMesh>()
             .add_plugins(MaterialPlugin::<RenderBlockGeneralMaterial>::default())
-            .add_systems(PreUpdate, spawn_mesh_system)
-            .add_systems(PreUpdate, general_material_changed)
-            .add_systems(PreUpdate, general_material_transform_changed)
+            .add_systems(
+                PreUpdate,
+                (
+                    spawn_mesh_system,
+                    general_material_changed.after(spawn_mesh_system),
+                    general_material_transform_changed.after(general_material_changed),
+                ),
+            )
             .preregister_asset_loader::<RenderBlockLoader>(&["rbm"]);
     }
 
@@ -254,7 +259,7 @@ fn general_material_transform_changed(
 ) {
     for (handle, transform) in &mut transforms_changed {
         if let Some(material) = materials.get_mut(handle) {
-            material.scale = transform.scale.length_squared() / 3.0;
+            material.scale = transform.scale.max_element();
         }
     }
 }
