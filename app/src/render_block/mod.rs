@@ -204,8 +204,9 @@ impl Plugin for RenderBlockPlugin {
             .add_systems(
                 PreUpdate,
                 (
-                    spawn_mesh_system,
-                    general_material_changed.after(spawn_mesh_system),
+                    load_mesh,
+                    reload_mesh.after(load_mesh),
+                    general_material_changed.after(reload_mesh),
                     general_material_transform_changed.after(general_material_changed),
                 ),
             )
@@ -223,7 +224,39 @@ impl Plugin for RenderBlockPlugin {
     }
 }
 
-fn spawn_mesh_system(
+fn apply_mesh(commands: &mut Commands, entity: Entity, mesh: &RenderBlockMesh) {
+    let children: Vec<Entity> = mesh
+        .primitives
+        .iter()
+        .map(|primitive| {
+            commands
+                .spawn(MaterialMeshBundle {
+                    mesh: primitive.mesh.clone(),
+                    material: match primitive.material.clone() {
+                        RenderBlockMaterial::General(material) => material,
+                    },
+                    ..default()
+                })
+                .id()
+        })
+        .collect();
+    commands.entity(entity).push_children(&children);
+}
+
+fn load_mesh(
+    mut commands: Commands,
+    assets: Res<Assets<RenderBlockMesh>>,
+    query: Query<(Entity, &Handle<RenderBlockMesh>), Changed<Handle<RenderBlockMesh>>>,
+) {
+    for (entity, handle) in &query {
+        commands.entity(entity).despawn_descendants();
+        if let Some(mesh) = assets.get(handle) {
+            apply_mesh(&mut commands, entity, mesh);
+        }
+    }
+}
+
+fn reload_mesh(
     mut commands: Commands,
     mut events: EventReader<AssetEvent<RenderBlockMesh>>,
     assets: Res<Assets<RenderBlockMesh>>,
@@ -244,22 +277,7 @@ fn spawn_mesh_system(
         if loaded.contains(&handle.id()) {
             commands.entity(entity).despawn_descendants();
             if let Some(mesh) = assets.get(handle) {
-                let children: Vec<Entity> = mesh
-                    .primitives
-                    .iter()
-                    .map(|primitive| {
-                        commands
-                            .spawn(MaterialMeshBundle {
-                                mesh: primitive.mesh.clone(),
-                                material: match primitive.material.clone() {
-                                    RenderBlockMaterial::General(material) => material,
-                                },
-                                ..default()
-                            })
-                            .id()
-                    })
-                    .collect();
-                commands.entity(entity).push_children(&children);
+                apply_mesh(&mut commands, entity, mesh);
             }
         }
     }
