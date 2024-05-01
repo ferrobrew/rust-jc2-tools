@@ -16,7 +16,7 @@ use thiserror::Error;
 
 use jc2_file_formats::render_block_model as rbm;
 
-use self::materials::{general::*, RenderBlockMaterial};
+use self::materials::{general::RenderBlockGeneralMaterial, RenderBlockMaterial};
 
 pub mod materials;
 
@@ -124,11 +124,6 @@ impl AssetLoader for RenderBlockLoader {
                         vec_attr!(mesh, Mesh::ATTRIBUTE_TANGENT, Vec4, general, tangent);
                         vec_attr!(mesh, Mesh::ATTRIBUTE_COLOR, Vec4, general, color);
 
-                        let parent = load_context.path().parent().unwrap().to_path_buf();
-                        let textures = &general.material.textures;
-
-                        let mut material = RenderBlockGeneralMaterial::from(&general.attributes);
-
                         fn load_image(
                             load_context: &mut LoadContext,
                             path: impl Into<PathBuf>,
@@ -157,6 +152,14 @@ impl AssetLoader for RenderBlockLoader {
                             )
                         }
 
+                        let parent = if let Some(parent) = load_context.path().parent() {
+                            parent.to_path_buf()
+                        } else {
+                            load_context.path().into()
+                        };
+                        let textures = &general.material.textures;
+
+                        let mut material = RenderBlockGeneralMaterial::from(&general.attributes);
                         material.diffuse_texture = Some(load_image(
                             load_context,
                             parent.join(textures[0].as_ref()),
@@ -173,9 +176,9 @@ impl AssetLoader for RenderBlockLoader {
                             false,
                         ));
 
-                        let mesh = load_context.add_labeled_asset("Mesh".to_string(), mesh);
+                        let mesh = load_context.add_labeled_asset("Mesh".into(), mesh);
                         let material = load_context
-                            .add_labeled_asset("Material".to_string(), material)
+                            .add_labeled_asset("Material".into(), material)
                             .into();
 
                         primitives.push(RenderBlockPrimitive { mesh, material });

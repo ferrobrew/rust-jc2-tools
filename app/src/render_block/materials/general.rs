@@ -1,6 +1,12 @@
 use bevy::{
     prelude::*,
-    render::{render_asset::*, render_resource::*},
+    render::{
+        render_asset::RenderAssets,
+        render_resource::{
+            AsBindGroup, AsBindGroupShaderType, CompareFunction, Face, RenderPipelineDescriptor,
+            ShaderRef, ShaderType, SpecializedMeshPipelineError,
+        },
+    },
 };
 use jc2_file_formats::render_block_model::{GeneralAttributes, GeneralFlags};
 
