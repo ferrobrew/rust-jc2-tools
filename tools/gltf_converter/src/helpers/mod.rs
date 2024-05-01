@@ -1,5 +1,3 @@
-use std::{mem::size_of_val, slice};
-
 use jc2_file_formats::render_block_model::{Material, RenderBlock};
 
 mod billboard_foliage;
@@ -51,7 +49,11 @@ const fn stride<T>(_: &[T]) -> usize {
 
 #[inline]
 fn bytes<T>(value: &[T]) -> &[u8] {
-    unsafe { slice::from_raw_parts(value.as_ptr() as *const u8, size_of_val(value)) }
+    #[allow(unsafe_code)]
+    // SAFETY: `value` references always safely converted to byte spans
+    unsafe {
+        std::slice::from_raw_parts(value.as_ptr().cast::<u8>(), std::mem::size_of_val(value))
+    }
 }
 
 #[inline]
