@@ -1,11 +1,19 @@
 [workspace]
-default-members = ["crates/*", "app", "tools/*"]
-members = ["crates/*", "app", "tools/*"]
 resolver = "2"
+members = [
+    "app",
+    "crates/*",
+    "tools/*",
+]
 
 [workspace.package]
-version = "0.1.0"
+authors = ["SK83RJOSH"]
 edition = "2021"
+homepage = "https://github.com/SK83RJOSH/rust-jc2-tools/"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/SK83RJOSH/rust-jc2-tools/"
+rust-version = "1.77"
+version = "0.1.0"
 
 [workspace.dependencies]
 binrw = "0.13"

@@ -4,11 +4,13 @@ use bevy::{
         CascadeShadowConfigBuilder,
     },
     prelude::*,
+    winit::WinitWindows,
 };
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_file_dialog::{FileDialogExt, FileDialogPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use debug::wireframe::{WireframeNormalsConfig, WireframeNormalsPlugin};
-use render_block::{RenderBlockBundle, RenderBlockPlugin};
+use render_block::{RenderBlockBundle, RenderBlockMesh, RenderBlockPlugin};
 
 mod debug;
 mod render_block;
@@ -31,6 +33,9 @@ fn main() {
                 }),
                 ..default()
             }),
+            FileDialogPlugin::new()
+                .with_pick_file::<RenderBlockMesh>()
+                .with_save_file::<RenderBlockMesh>(),
             RenderBlockPlugin,
             EguiPlugin,
             PanOrbitCameraPlugin,
@@ -97,46 +102,57 @@ fn startup_system(
 fn user_interface_system(
     mut app_data: ResMut<AppData>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut contexts: EguiContexts,
-    mut wireframes: ResMut<WireframeConfig>,
     mut normals: ResMut<WireframeNormalsConfig>,
     mut query: Query<(&mut Transform, &DirectionalLight)>,
+    mut wireframes: ResMut<WireframeConfig>,
+    _windows: NonSend<WinitWindows>,
 ) {
-    egui::Window::new("Settings").show(contexts.ctx_mut(), |ui| {
-        ui.checkbox(&mut wireframes.global, "Wireframes");
+    egui::TopBottomPanel::top("title_bar").show(contexts.ctx_mut(), |ui| {
+        ui.visuals_mut().button_frame = false;
+        ui.horizontal_wrapped(|ui| {
+            ui.menu_button("File", |ui| {
+                ui.menu_button("Open", |ui| {
+                    ui.text_edit_singleline(&mut app_data.file);
+                    if ui.button("Load File").clicked() {
+                        commands
+                            .dialog()
+                            .add_filter("Render Block Model", &["rbm"])
+                            .pick_file_path::<RenderBlockMesh>();
+                    }
+                });
+                let _ = ui.button("Save");
+                let _ = ui.button("Close");
+            });
 
-        ui.checkbox(&mut normals.global, "Normals");
-        if normals.global {
-            ui.add(
-                egui::Slider::new(&mut normals.length, 0.01..=0.1)
-                    .text("Normals Length")
-                    .custom_formatter(|n, _| format!("{n:.3}")),
-            );
-        }
+            ui.separator();
+            ui.menu_button("View", |ui| {
+                ui.checkbox(&mut wireframes.global, "Wireframes");
 
-        ui.label("Directional Light");
-        for (mut transform, _light) in &mut query {
-            let (mut x, mut y, mut z) = transform.rotation.to_euler(EulerRot::XYZ);
-            ui.drag_angle(&mut x);
-            ui.drag_angle(&mut y);
-            ui.drag_angle(&mut z);
-            transform.rotation = Quat::from_euler(EulerRot::XYZ, x, y, z);
-        }
+                ui.checkbox(&mut normals.global, "Normals");
+                if normals.global {
+                    ui.add(
+                        egui::Slider::new(&mut normals.length, 0.01..=0.1)
+                            .text("Normals Length")
+                            .custom_formatter(|n, _| format!("{n:.3}")),
+                    );
+                }
 
-        ui.text_edit_singleline(&mut app_data.file);
-        if ui.button("Load File").clicked() {
-            if let Some(model) = app_data.model {
-                commands.entity(model).despawn_recursive();
-            }
-            app_data.model = Some(
-                commands
-                    .spawn(RenderBlockBundle {
-                        mesh: asset_server.load(&app_data.file),
-                        ..default()
-                    })
-                    .id(),
-            );
-        }
+                ui.label("Directional Light");
+                for (mut transform, _light) in &mut query {
+                    let (mut x, mut y, mut z) = transform.rotation.to_euler(EulerRot::XYZ);
+                    ui.horizontal(|ui| {
+                        ui.drag_angle(&mut x);
+                        ui.drag_angle(&mut y);
+                        ui.drag_angle(&mut z);
+                    });
+                    transform.rotation = Quat::from_euler(EulerRot::XYZ, x, y, z);
+                }
+            });
+
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                egui::widgets::global_dark_light_mode_switch(ui);
+            });
+        });
     });
 }
