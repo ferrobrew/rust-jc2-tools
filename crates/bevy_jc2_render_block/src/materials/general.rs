@@ -141,12 +141,12 @@ impl From<&GeneralAttributes> for RenderBlockGeneralMaterial {
 impl Material for RenderBlockGeneralMaterial {
     #[inline]
     fn vertex_shader() -> ShaderRef {
-        "shaders/general_material.wgsl".into()
+        "embedded://bevy_jc2_render_block/assets/shaders/general_material.wgsl".into()
     }
 
     #[inline]
     fn fragment_shader() -> ShaderRef {
-        "shaders/general_material.wgsl".into()
+        "embedded://bevy_jc2_render_block/assets/shaders/general_material.wgsl".into()
     }
 
     #[inline]

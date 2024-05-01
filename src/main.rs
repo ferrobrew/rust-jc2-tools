@@ -8,12 +8,11 @@ use bevy::{
 };
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_file_dialog::{FileDialogExt, FileDialogPlugin};
+use bevy_jc2_render_block::{RenderBlockBundle, RenderBlockMesh, RenderBlockPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use debug::wireframe::{WireframeNormalsConfig, WireframeNormalsPlugin};
-use render_block::{RenderBlockBundle, RenderBlockMesh, RenderBlockPlugin};
 
 mod debug;
-mod render_block;
 
 #[derive(Resource, Debug, Clone, Default, Reflect)]
 #[reflect(Resource)]

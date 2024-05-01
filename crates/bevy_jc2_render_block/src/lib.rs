@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use bevy::{
-    asset::{AssetLoader, AsyncReadExt, LoadContext},
+    asset::{embedded_asset, AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
@@ -201,6 +201,8 @@ pub struct RenderBlockPlugin;
 
 impl Plugin for RenderBlockPlugin {
     fn build(&self, app: &mut App) {
+        embedded_asset!(app, "assets/shaders/general_material.wgsl");
+
         app.init_asset::<RenderBlockPrimitive>()
             .init_asset::<RenderBlockMesh>()
             .add_plugins(MaterialPlugin::<RenderBlockGeneralMaterial>::default())

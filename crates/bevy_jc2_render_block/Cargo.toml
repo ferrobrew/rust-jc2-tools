@@ -1,0 +1,28 @@
+[package]
+name = "bevy_jc2_render_block"
+authors.workspace = true
+description = "Bevy Plugin for rendering Just Cause 2 models"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+jc2_file_formats.workspace = true
+
+bevy = { workspace = true, features = [ 
+  "bevy_pbr",
+  "bevy_render",
+  "bevy_asset",
+] }
+binrw.workspace = true
+thiserror.workspace = true

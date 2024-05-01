@@ -203,19 +203,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_egui",
- "bevy_file_dialog",
- "bevy_panorbit_camera",
- "binrw",
- "jc2_file_formats",
- "thiserror",
-]
-
-[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -845,6 +832,16 @@ dependencies = [
  "bevy_utils",
  "bevy_window",
  "bevy_winit",
+]
+
+[[package]]
+name = "bevy_jc2_render_block"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "binrw",
+ "jc2_file_formats",
+ "thiserror",
 ]
 
 [[package]]
@@ -2626,6 +2623,20 @@ dependencies = [
  "const_for",
  "paste",
  "static_assertions",
+]
+
+[[package]]
+name = "jc2_tools"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
+ "bevy_file_dialog",
+ "bevy_jc2_render_block",
+ "bevy_panorbit_camera",
+ "binrw",
+ "jc2_file_formats",
+ "thiserror",
 ]
 
 [[package]]
