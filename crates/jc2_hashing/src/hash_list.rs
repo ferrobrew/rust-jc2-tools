@@ -12,7 +12,7 @@ impl HashEntry {
     fn as_string(&self) -> Option<&String> {
         match self {
             HashEntry::String(str) => Some(str),
-            _ => None,
+            HashEntry::Path(_) => None,
         }
     }
 
@@ -20,7 +20,7 @@ impl HashEntry {
     fn as_path(&self) -> Option<&PathBuf> {
         match self {
             HashEntry::Path(path) => Some(path),
-            _ => None,
+            HashEntry::String(_) => None,
         }
     }
 }
