@@ -14,6 +14,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+bevy_jc2_file_system.workspace = true
 bevy_jc2_render_block.workspace = true
 jc2_file_formats.workspace = true
 
@@ -59,6 +60,7 @@ rust-version = "1.77"
 version = "0.1.0"
 
 [workspace.dependencies]
+bevy_jc2_file_system = { path = "crates/bevy_jc2_file_system", version = "0.1.0", default-features = false }
 bevy_jc2_render_block = { path = "crates/bevy_jc2_render_block", version = "0.1.0", default-features = false }
 jc2_file_formats = { path = "crates/jc2_file_formats", version = "0.1.0", default-features = false }
 jc2_hashing = { path = "crates/jc2_hashing", version = "0.1.0", default-features = false }
@@ -73,11 +75,14 @@ bitflags = { version = "2.4", features = ["bytemuck"] }
 bytemuck = { version = "1.14", features = ["must_cast"] }
 clap = { version = "4.4", features = ["derive"] }
 const_for = "0.1"
+futures-io = "0.3"
+futures-lite = "2.0"
 gltf = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
 gltf-json = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
 image = { version = "0.25", default-features = false }
 itertools = "0.12"
 num-traits = "0.2"
+parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
 paste = "1.0"
 rgb = "0.8"
 static_assertions = "1.1"

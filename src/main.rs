@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use bevy::{
     pbr::{
         wireframe::{WireframeConfig, WireframePlugin},
@@ -7,7 +9,8 @@ use bevy::{
     winit::WinitWindows,
 };
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use bevy_file_dialog::{FileDialogExt, FileDialogPlugin};
+use bevy_file_dialog::{DialogFilePicked, FileDialogExt, FileDialogPlugin};
+use bevy_jc2_file_system::{FileSystemMounts, FileSystemPlugin};
 use bevy_jc2_render_block::{RenderBlockBundle, RenderBlockMesh, RenderBlockPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use debug::wireframe::{WireframeNormalsConfig, WireframeNormalsPlugin};
@@ -18,12 +21,14 @@ mod debug;
 #[reflect(Resource)]
 pub struct AppData {
     pub file: String,
+    pub directory: Option<PathBuf>,
     pub model: Option<Entity>,
 }
 
 fn main() {
     App::new()
         .add_plugins((
+            FileSystemPlugin,
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "JC2 Tools".into(),
@@ -51,13 +56,14 @@ fn main() {
         })
         .add_systems(Startup, startup_system)
         .add_systems(Update, user_interface_system)
+        .add_systems(PostUpdate, handle_file_selection)
         .run();
 }
 
 fn startup_system(
+    asset_server: Res<AssetServer>,
     mut app_data: ResMut<AppData>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
 ) {
     commands
         .spawn(Camera3dBundle::default())
@@ -98,8 +104,45 @@ fn startup_system(
     );
 }
 
-fn user_interface_system(
+fn handle_file_selection(
+    asset_server: Res<AssetServer>,
+    mounts: Res<FileSystemMounts>,
     mut app_data: ResMut<AppData>,
+    mut commands: Commands,
+    mut events: EventReader<DialogFilePicked<RenderBlockMesh>>,
+) {
+    for path in events.read().map(|e| e.path.clone()) {
+        let Some(directory) = path.parent() else {
+            continue;
+        };
+        let Ok(file) = path.strip_prefix(directory) else {
+            continue;
+        };
+
+        if let Some(mounted_directory) = app_data.directory.clone() {
+            mounts.unmount_directory(mounted_directory);
+        }
+
+        mounts.mount_directory(directory);
+        app_data.directory = Some(directory.into());
+
+        if let Some(model) = app_data.model {
+            commands.entity(model).despawn_recursive();
+        }
+
+        app_data.file = file.to_string_lossy().into();
+        app_data.model = Some(
+            commands
+                .spawn(RenderBlockBundle {
+                    mesh: asset_server.load(&app_data.file),
+                    ..default()
+                })
+                .id(),
+        );
+    }
+}
+
+fn user_interface_system(
     mut commands: Commands,
     mut contexts: EguiContexts,
     mut normals: ResMut<WireframeNormalsConfig>,
@@ -111,15 +154,12 @@ fn user_interface_system(
         ui.visuals_mut().button_frame = false;
         ui.horizontal_wrapped(|ui| {
             ui.menu_button("File", |ui| {
-                ui.menu_button("Open", |ui| {
-                    ui.text_edit_singleline(&mut app_data.file);
-                    if ui.button("Load File").clicked() {
-                        commands
-                            .dialog()
-                            .add_filter("Render Block Model", &["rbm"])
-                            .pick_file_path::<RenderBlockMesh>();
-                    }
-                });
+                if ui.button("Open").clicked() {
+                    commands
+                        .dialog()
+                        .add_filter("Render Block Model", &["rbm"])
+                        .pick_file_path::<RenderBlockMesh>();
+                }
                 let _ = ui.button("Save");
                 let _ = ui.button("Close");
             });
