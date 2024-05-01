@@ -7,7 +7,7 @@ use super::{
 
 #[binrw]
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub struct Vec2<T: VecType> {
     pub x: T,
     pub y: T,

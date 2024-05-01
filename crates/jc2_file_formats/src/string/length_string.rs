@@ -16,7 +16,7 @@ impl<T> LengthType for T where
 }
 
 #[binrw]
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct LengthString<T: LengthType> {
     #[br(parse_with = Self::parse)]
     #[bw(write_with = Self::write)]

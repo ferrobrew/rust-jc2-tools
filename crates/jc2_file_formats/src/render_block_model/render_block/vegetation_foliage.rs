@@ -8,7 +8,7 @@ use crate::{
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum VegetationFoliageVersion {
     #[default]
     V0,
@@ -18,7 +18,7 @@ bitflags! {
     #[binrw]
     #[br(map = Self::from_bits_truncate)]
     #[bw(map = |&x: &Self| x.bits())]
-    #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
     pub struct VegetationFoliageFlags: u32 {
         const NO_SPECULAR = 1 << 0;
         const NO_TRANSLUCENCY = 1 << 1;

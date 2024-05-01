@@ -5,7 +5,7 @@ use crate::render_block_model::{GeneralVertex, IndexBuffer, Material, VertexBuff
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum LambertVersion {
     V0,
     V2 = 2,
@@ -18,7 +18,7 @@ bitflags! {
     #[binrw]
     #[br(map = Self::from_bits_truncate)]
     #[bw(map = |&x: &Self| x.bits())]
-    #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
     pub struct LambertFlags: u32 {
         const ALPHA_BLENDING = 1 << 0;
         const ALPHA_TEST = 1 << 1;

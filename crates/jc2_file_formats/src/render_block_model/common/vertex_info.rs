@@ -4,7 +4,7 @@ use crate::math::{Vec2, Vec4};
 
 #[binrw]
 #[brw(repr = u32)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum VertexFormat {
     #[default]
     F32,

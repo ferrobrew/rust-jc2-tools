@@ -5,7 +5,7 @@ use crate::render_block_model::{GeneralVertex, IndexBuffer, Material, VertexBuff
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum WindowVersion {
     #[default]
     V0,
@@ -15,7 +15,7 @@ bitflags! {
     #[binrw]
     #[br(map = Self::from_bits_truncate)]
     #[bw(map = |&x: &Self| x.bits())]
-    #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
     pub struct WindowFlags: u32 {
         const ANIMATE_TEXTURE = 1 << 0;
         const ONE_SIDED = 1 << 1;

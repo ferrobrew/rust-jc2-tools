@@ -51,7 +51,7 @@ impl BinWrite for SkinBatch {
             self.size.write_options(writer, endian, ())?;
             self.offset.write_options(writer, endian, ())?;
             length.write_options(writer, endian, ())?;
-            for vertex in self.bone_indices.iter() {
+            for vertex in &self.bone_indices {
                 vertex.write_options(writer, endian, args)?;
             }
             Ok(())

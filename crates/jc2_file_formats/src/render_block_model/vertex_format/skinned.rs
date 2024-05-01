@@ -50,7 +50,7 @@ impl BinRead for VertexBuffer<SkinnedVertex> {
                     tangent: data.tangent.into(),
                     binormal: data.binormal.into(),
                     uv0: data.uv0,
-                })
+                });
             }
             Ok(Self(vertices))
         } else {

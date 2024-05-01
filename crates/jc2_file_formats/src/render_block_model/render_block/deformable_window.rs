@@ -7,7 +7,7 @@ use crate::render_block_model::{
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum DeformableWindowVersion {
     V0,
     #[default]
@@ -19,7 +19,7 @@ bitflags! {
     #[binrw]
     #[br(map = Self::from_bits_truncate)]
     #[bw(map = |&x: &Self| x.bits())]
-    #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
     pub struct DeformableWindowFlags: u32 {
         const DARK_WINDOW = 1 << 0;
     }

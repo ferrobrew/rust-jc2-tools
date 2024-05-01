@@ -210,7 +210,7 @@ impl BinRead for VertexBuffer<LitDeformableVertex> {
                         morph_normal: data.morph_normal,
                         tangent: data.tangent,
                         morph_tangent: data.morph_tangent,
-                    })
+                    });
                 }
                 Ok(Self(
                     vertices
@@ -255,7 +255,7 @@ impl BinWrite for VertexBuffer<LitDeformableVertex> {
         if args.0 {
             let mut positions = Vec::with_capacity(vertices.len());
             let mut datas = Vec::with_capacity(vertices.len());
-            for vertex in vertices.iter() {
+            for vertex in &vertices {
                 positions.push(DeformableVertexPosition {
                     position: vertex.position,
                     morph_position: vertex.morph_position,

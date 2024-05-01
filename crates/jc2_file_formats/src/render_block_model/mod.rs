@@ -28,7 +28,7 @@ pub enum RenderBlockError {
 }
 
 #[binrw]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Endian {
     #[brw(magic = b"\x05\x00\x00\x00")]
     Little,

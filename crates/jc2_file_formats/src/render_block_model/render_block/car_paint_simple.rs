@@ -6,7 +6,7 @@ use super::CarPaintAttributes;
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum CarPaintSimpleVersion {
     #[default]
     V1 = 1,

@@ -4,7 +4,7 @@ use crate::render_block_model::{BillboardFoliageVertex, IndexBuffer, Material, V
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum BillboardFoliageVersion {
     #[default]
     V0,

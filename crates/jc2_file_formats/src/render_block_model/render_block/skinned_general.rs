@@ -8,7 +8,7 @@ use crate::{
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum SkinnedGeneralVersion {
     V1 = 1,
     #[default]
@@ -17,7 +17,7 @@ pub enum SkinnedGeneralVersion {
 
 #[binrw]
 #[brw(repr = u16)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum SkinnedGeneralTechnique {
     #[default]
     Skin,
@@ -32,7 +32,7 @@ bitflags! {
     #[binrw]
     #[br(map = Self::from_bits_truncate)]
     #[bw(map = |&x: &Self| x.bits())]
-    #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
     pub struct SkinnedGeneralFlags: u16 {
         const NO_CULLING = 1 << 0;
         const ALPHA_TEST = 1 << 1;

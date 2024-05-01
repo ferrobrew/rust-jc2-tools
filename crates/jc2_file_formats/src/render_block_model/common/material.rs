@@ -4,7 +4,7 @@ use crate::string::LengthString;
 
 #[binrw]
 #[brw(repr = u32)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum PrimitiveType {
     #[default]
     TriangleList,

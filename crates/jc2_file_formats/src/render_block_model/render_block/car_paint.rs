@@ -8,7 +8,7 @@ use crate::{
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum CarPaintVersion {
     V1 = 1,
     V2,
@@ -21,7 +21,7 @@ bitflags! {
     #[binrw]
     #[br(map = Self::from_bits_truncate)]
     #[bw(map = |&x: &Self| x.bits())]
-    #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
     pub struct CarPaintFlags: u32 {
         const NO_CULLING = 1 << 0;
         const ALPHA_BLENDING = 1 << 1;

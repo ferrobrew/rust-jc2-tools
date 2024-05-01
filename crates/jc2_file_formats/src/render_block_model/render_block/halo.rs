@@ -4,7 +4,7 @@ use crate::render_block_model::{HaloVertex, IndexBuffer, Material, VertexBuffer}
 
 #[binrw]
 #[brw(repr = u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub enum HaloVersion {
     #[default]
     V0,

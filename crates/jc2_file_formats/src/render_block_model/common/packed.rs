@@ -3,7 +3,7 @@ use binrw::binrw;
 use crate::math::{Vec2, Vec3, Vec4};
 
 #[binrw]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub struct PackedWeightAndIndex(i16);
 
 impl PackedWeightAndIndex {
@@ -46,7 +46,7 @@ impl From<PackedUVF32> for Vec2<f32> {
 }
 
 #[binrw]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub struct PackedUVI16(i16, i16);
 
 impl From<Vec2<f32>> for PackedUVI16 {
@@ -70,7 +70,7 @@ impl From<PackedUVI16> for Vec2<f32> {
 }
 
 #[binrw]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub struct PackedPosition(i16, i16, i16);
 
 impl From<Vec3<f32>> for PackedPosition {
@@ -154,7 +154,7 @@ impl From<PackedTangentF32> for Vec4<f32> {
 }
 
 #[binrw]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub struct PackedNormalU32(u32);
 
 impl From<Vec3<f32>> for PackedNormalU32 {
@@ -237,7 +237,7 @@ impl From<PackedRGBAF32> for Vec4<f32> {
 }
 
 #[binrw]
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd)]
 pub struct PackedVec4F32(u32);
 
 impl From<Vec4<f32>> for PackedVec4F32 {
