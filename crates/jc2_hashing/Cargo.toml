@@ -1,0 +1,23 @@
+[package]
+name = "jc2_hashing"
+authors.workspace = true
+description = "Just Cause 2 Hashing Utilities"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+const_for.workspace = true
+binrw.workspace = true
+paste.workspace = true
+static_assertions.workspace = true

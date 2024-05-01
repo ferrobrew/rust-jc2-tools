@@ -1,11 +1,11 @@
 [package]
-name = "gltf_converter"
+name = "jc2_file_formats"
 authors.workspace = true
 description = "Just Cause 2 Hashing Utilities"
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-publish = false
+publish = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -13,16 +13,14 @@ version.workspace = true
 [lints]
 workspace = true
 
-[dependencies]
-jc2_file_formats.workspace = true
+[package.metadata.docs.rs]
+all-features = true
 
-anyhow.workspace = true
+[dependencies]
+jc2_hashing.workspace = true
+
+binrw.workspace = true
+bitflags.workspace = true
 bytemuck.workspace = true
-clap.workspace = true
-gltf-json.workspace = true
-gltf.workspace = true
-image.workspace = true
-itertools.workspace = true
-rgb.workspace = true
-texpresso.workspace = true
+num-traits.workspace = true
 thiserror.workspace = true
