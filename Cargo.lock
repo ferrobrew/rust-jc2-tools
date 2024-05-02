@@ -843,6 +843,7 @@ dependencies = [
  "futures-io",
  "futures-lite",
  "jc2_file_formats",
+ "jc2_hashing",
  "parking_lot",
  "thiserror",
 ]
@@ -2649,7 +2650,7 @@ dependencies = [
  "bevy_jc2_render_block",
  "bevy_panorbit_camera",
  "binrw",
- "jc2_file_formats",
+ "itertools",
  "thiserror",
 ]
 

@@ -1,6 +1,6 @@
 use std::{
     fs::{read_dir, File},
-    io::{Read, Seek},
+    io::{Cursor, Read, Seek},
     path::{Path, PathBuf},
     pin::Pin,
     sync::Arc,
@@ -10,6 +10,7 @@ use std::{
 use bevy::asset::io::{AssetReader, AssetReaderError, PathStream, Reader};
 use futures_io::{AsyncRead, AsyncSeek};
 use futures_lite::Stream;
+use jc2_hashing::HashString;
 
 use crate::FileSystemMountsData;
 
@@ -39,22 +40,69 @@ impl FileSystemAssetReader {
     }
 
     fn is_file(&self, path: &Path) -> bool {
+        // Check mounted archives for our file, using only the name
+        if let Some(hash) = path
+            .file_name()
+            .map(|name| HashString::from_bytes(name.as_encoded_bytes()))
+        {
+            for archive in self.mounts.archives.read().iter() {
+                if archive.entries.contains_key(&hash) {
+                    return true;
+                }
+            }
+        }
+
+        // Check mounted directories for our file, using the full path
         for directory in self.mounts.directories.read().iter() {
             let file = directory.join(path);
             if file.is_file() {
                 return true;
             }
         }
+
+        // Nothing found
         false
     }
 
     fn read_file(&self, path: &Path) -> Result<FileReader, AssetReaderError> {
+        // Attempt to get a reader from mounted archives, using only name
+        if let Some(hash) = path
+            .file_name()
+            .map(|name| HashString::from_bytes(name.as_encoded_bytes()))
+        {
+            for archive in self.mounts.archives.read().iter() {
+                // Skip archives that don't contain our hash
+                let Some(entry) = archive.entries.get(&hash) else {
+                    continue;
+                };
+
+                // Get the archive path from mounted directories
+                let Some(path) = self.mounts.directories.read().iter().find_map(|directory| {
+                    let path = directory.join(&archive.path);
+                    path.is_file().then_some(path)
+                }) else {
+                    continue;
+                };
+
+                // Open the archive, read the file, and create a cursor
+                let mut file = File::open(path)?;
+                file.seek(std::io::SeekFrom::Start(entry.offset as u64))?;
+                let mut buffer = vec![0u8; entry.size as usize];
+                file.read_exact(&mut buffer)?;
+
+                return Ok(FileReader::from(Cursor::new(buffer)));
+            }
+        }
+
+        // Otherwise, attempt to get a reader from mounted directories
         for directory in self.mounts.directories.read().iter() {
             let file = directory.join(path);
             if file.is_file() {
-                return Ok(FileReader(File::open(file)?));
+                return Ok(FileReader::from(File::open(file)?));
             }
         }
+
+        // Seems the asset wasn't found, shame
         Err(AssetReaderError::NotFound(path.into()))
     }
 
@@ -102,7 +150,24 @@ impl FileSystemAssetReader {
     }
 }
 
-struct FileReader(File);
+enum FileReaderValue {
+    File(File),
+    Cursor(Cursor<Vec<u8>>),
+}
+
+struct FileReader(FileReaderValue);
+
+impl From<File> for FileReader {
+    fn from(value: File) -> Self {
+        Self(FileReaderValue::File(value))
+    }
+}
+
+impl From<Cursor<Vec<u8>>> for FileReader {
+    fn from(value: Cursor<Vec<u8>>) -> Self {
+        Self(FileReaderValue::Cursor(value))
+    }
+}
 
 impl AsyncRead for FileReader {
     fn poll_read(
@@ -110,9 +175,10 @@ impl AsyncRead for FileReader {
         _cx: &mut std::task::Context<'_>,
         buf: &mut [u8],
     ) -> Poll<std::io::Result<usize>> {
-        let this = self.get_mut();
-        let read = this.0.read(buf);
-        Poll::Ready(read)
+        Poll::Ready(match &mut self.get_mut().0 {
+            FileReaderValue::File(file) => file.read(buf),
+            FileReaderValue::Cursor(cursor) => cursor.read(buf),
+        })
     }
 }
 
@@ -122,9 +188,10 @@ impl AsyncSeek for FileReader {
         _cx: &mut std::task::Context<'_>,
         pos: std::io::SeekFrom,
     ) -> Poll<std::io::Result<u64>> {
-        let this = self.get_mut();
-        let seek = this.0.seek(pos);
-        Poll::Ready(seek)
+        Poll::Ready(match &mut self.get_mut().0 {
+            FileReaderValue::File(file) => file.seek(pos),
+            FileReaderValue::Cursor(cursor) => cursor.seek(pos),
+        })
     }
 }
 

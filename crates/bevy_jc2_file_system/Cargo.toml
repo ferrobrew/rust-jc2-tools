@@ -18,6 +18,7 @@ all-features = true
 
 [dependencies]
 jc2_file_formats.workspace = true
+jc2_hashing.workspace = true
 
 bevy = { workspace = true, features = [
   "bevy_asset",

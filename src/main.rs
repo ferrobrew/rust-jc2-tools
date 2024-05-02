@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use bevy::{
     pbr::{
@@ -9,19 +9,24 @@ use bevy::{
     winit::WinitWindows,
 };
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use bevy_file_dialog::{DialogFilePicked, FileDialogExt, FileDialogPlugin};
+use bevy_file_dialog::{DialogDirectoryPicked, DialogFilePicked, FileDialogExt, FileDialogPlugin};
 use bevy_jc2_file_system::{FileSystemMounts, FileSystemPlugin};
 use bevy_jc2_render_block::{RenderBlockBundle, RenderBlockMesh, RenderBlockPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use debug::wireframe::{WireframeNormalsConfig, WireframeNormalsPlugin};
+use itertools::Itertools;
 
 mod debug;
+
+struct ContentDirectory;
 
 #[derive(Resource, Debug, Clone, Default, Reflect)]
 #[reflect(Resource)]
 pub struct AppData {
     pub file: String,
-    pub directory: Option<PathBuf>,
+    pub file_directory: Option<PathBuf>,
+    pub content_archives: Vec<PathBuf>,
+    pub content_directory: Option<PathBuf>,
     pub model: Option<Entity>,
 }
 
@@ -39,7 +44,8 @@ fn main() {
             }),
             FileDialogPlugin::new()
                 .with_pick_file::<RenderBlockMesh>()
-                .with_save_file::<RenderBlockMesh>(),
+                .with_save_file::<RenderBlockMesh>()
+                .with_pick_directory::<ContentDirectory>(),
             RenderBlockPlugin,
             EguiPlugin,
             PanOrbitCameraPlugin,
@@ -56,7 +62,7 @@ fn main() {
         })
         .add_systems(Startup, startup_system)
         .add_systems(Update, user_interface_system)
-        .add_systems(PostUpdate, handle_file_selection)
+        .add_systems(PostUpdate, (open_render_block, open_content_directory))
         .run();
 }
 
@@ -104,7 +110,7 @@ fn startup_system(
     );
 }
 
-fn handle_file_selection(
+fn open_render_block(
     asset_server: Res<AssetServer>,
     mounts: Res<FileSystemMounts>,
     mut app_data: ResMut<AppData>,
@@ -119,17 +125,19 @@ fn handle_file_selection(
             continue;
         };
 
-        if let Some(mounted_directory) = app_data.directory.clone() {
+        // Remount file directory
+        if let Some(mounted_directory) = app_data.file_directory.clone() {
             mounts.unmount_directory(mounted_directory);
         }
-
         mounts.mount_directory(directory);
-        app_data.directory = Some(directory.into());
+        app_data.file_directory = Some(directory.into());
 
+        // Despawn existing model
         if let Some(model) = app_data.model {
             commands.entity(model).despawn_recursive();
         }
 
+        // Spawn the new model
         app_data.file = file.to_string_lossy().into();
         app_data.model = Some(
             commands
@@ -139,6 +147,49 @@ fn handle_file_selection(
                 })
                 .id(),
         );
+    }
+}
+
+fn open_content_directory(
+    asset_server: Res<AssetServer>,
+    mut mounts: ResMut<FileSystemMounts>,
+    mut app_data: ResMut<AppData>,
+    mut events: EventReader<DialogDirectoryPicked<ContentDirectory>>,
+) {
+    for path in events.read().map(|e| e.path.clone()) {
+        // Unmount and clear content archives
+        for archive in &app_data.content_archives {
+            mounts.unmount_archive(archive);
+        }
+        app_data.content_archives.clear();
+
+        // Remount the content directory
+        if let Some(content_directory) = &app_data.content_directory {
+            mounts.unmount_directory(content_directory);
+        }
+        mounts.mount_directory(path.clone());
+        app_data.content_directory = Some(path.clone());
+
+        // Discover archives
+        let archives = ["archives_win32", "DLC"]
+            .iter()
+            .filter_map(|directory| fs::read_dir(path.join(directory)).ok())
+            .flat_map(|files| {
+                files
+                    .filter_map(|file| file.ok().map(|f| f.path()))
+                    .filter(|file| file.extension().is_some_and(|f| f == "tab"))
+                    .sorted()
+            })
+            .collect::<Vec<PathBuf>>();
+
+        // Mount discovered archives
+        for archive in archives
+            .iter()
+            .filter_map(|archive| archive.strip_prefix(&path).ok())
+        {
+            mounts.mount_archive(&asset_server, archive.to_owned());
+            app_data.content_archives.push(archive.into());
+        }
     }
 }
 
@@ -186,6 +237,16 @@ fn user_interface_system(
                         ui.drag_angle(&mut z);
                     });
                     transform.rotation = Quat::from_euler(EulerRot::XYZ, x, y, z);
+                }
+            });
+
+            ui.separator();
+            ui.menu_button("Options", |ui| {
+                if ui.button("Mount Content").clicked() {
+                    commands
+                        .dialog()
+                        .add_filter("Render Block Model", &["rbm"])
+                        .pick_directory_path::<ContentDirectory>();
                 }
             });
 

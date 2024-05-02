@@ -16,7 +16,6 @@ workspace = true
 [dependencies]
 bevy_jc2_file_system.workspace = true
 bevy_jc2_render_block.workspace = true
-jc2_file_formats.workspace = true
 
 bevy = { workspace = true, features = [
     "bevy_asset",
@@ -41,6 +40,7 @@ bevy_egui.workspace = true
 bevy_file_dialog.workspace = true
 bevy_panorbit_camera.workspace = true
 binrw.workspace = true
+itertools.workspace = true
 thiserror.workspace = true
 
 [workspace]
