@@ -53,6 +53,10 @@ impl<T: LengthType> LengthString<T> {
             })
         }
     }
+
+    pub fn size(&self) -> usize {
+        std::mem::size_of::<u32>() + self.value.as_bytes().len()
+    }
 }
 
 impl<T: LengthType> AsRef<str> for LengthString<T> {
