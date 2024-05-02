@@ -1,4 +1,2 @@
-.cargo/
-target/
-rust-toolchain.toml
-rust-toolchain
+/target
+/rust-toolchain.toml
