@@ -176,10 +176,10 @@ impl StreamArchive {
         });
 
         // Build the final buffer, and our table of contents
-        let mut contents = Vec::with_capacity(entries.len());
+        let mut table = Vec::with_capacity(entries.len());
         let mut buffer = Vec::with_capacity(buffer_size);
         for ((name, data), padding) in entries.iter().zip(&entry_padding) {
-            contents.push((
+            table.push((
                 LengthString::<u32>::from(name.clone()),
                 ArchiveTableEntry {
                     offset: buffer.len() as u32,
@@ -191,23 +191,23 @@ impl StreamArchive {
         }
 
         // Write the table of contents size
-        let (contents_size, contents_padding) = {
-            let size = contents.iter().fold(0usize, |size, entry| {
+        let (table_size, table_padding) = {
+            let size = table.iter().fold(0usize, |size, entry| {
                 size + entry.0.size() + std::mem::size_of_val(&entry.1)
             });
             let padding = align(size, 16) - size;
             ((size + padding) as u32, padding)
         };
-        contents_size.write_options(writer, endian, ())?;
+        table_size.write_options(writer, endian, ())?;
 
         // Write the table of contents
-        let contents_position = writer.stream_position()? as u32;
-        for (name, entry) in &mut contents {
-            entry.offset += contents_position + contents_size;
+        let table_position = writer.stream_position()? as u32;
+        for (name, entry) in &mut table {
+            entry.offset += table_position + table_size;
             name.write_options(writer, endian, ())?;
             entry.write_options(writer, endian, ())?;
         }
-        writer.write_all(&vec![0u8; contents_padding])?;
+        writer.write_all(&vec![0u8; table_padding])?;
 
         // Finally write the data buffer
         writer.write_all(&buffer)?;
