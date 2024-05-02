@@ -1,0 +1,44 @@
+[package]
+name = "jc2_tools"
+authors.workspace = true
+description = "Just Cause 2 Editor"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_jc2_file_system.workspace = true
+bevy_jc2_render_block.workspace = true
+
+bevy = { workspace = true, features = [
+    "bevy_asset",
+    "bevy_core_pipeline",
+    "bevy_gizmos",
+    "bevy_pbr",
+    "bevy_render",
+    "bevy_text",
+    "bevy_winit",
+    "default_font",
+    "multi-threaded",
+    "tonemapping_luts",
+    "webgpu",
+    "x11",
+    "dds",
+    # development features
+    "dynamic_linking",
+    "embedded_watcher",
+    "file_watcher",
+] }
+bevy_egui.workspace = true
+bevy_file_dialog.workspace = true
+bevy_panorbit_camera.workspace = true
+binrw.workspace = true
+itertools.workspace = true
+thiserror.workspace = true
