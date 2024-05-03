@@ -4,7 +4,7 @@ use bevy::{
 };
 use jc2_file_formats::archive::{ArchiveTable, ArchiveTableEntry, StreamArchive};
 use jc2_hashing::HashString;
-use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -28,7 +28,7 @@ pub(crate) struct Archive {
     pub(crate) hash: HashString,
     pub(crate) source_path: PathBuf,
     pub(crate) target_path: PathBuf,
-    pub(crate) entries: Arc<HashMap<HashString, ArchiveEntry>>,
+    pub(crate) entries: HashMap<HashString, ArchiveEntry>,
 }
 
 #[derive(Default)]
@@ -57,13 +57,11 @@ impl AssetLoader for ArchiveLoader {
                         hash: HashString::from_str(&load_context.path().to_string_lossy()),
                         source_path: load_context.path().into(),
                         target_path: load_context.path().with_extension("arc"),
-                        entries: Arc::new(
-                            archive
-                                .entries
-                                .into_iter()
-                                .map(|(k, v)| (k, ArchiveEntry::Streamed(v)))
-                                .collect(),
-                        ),
+                        entries: archive
+                            .entries
+                            .into_iter()
+                            .map(|(k, v)| (k, ArchiveEntry::Streamed(v)))
+                            .collect(),
                     })
                 }
                 Some("ee") => {
@@ -71,16 +69,12 @@ impl AssetLoader for ArchiveLoader {
                     Ok(Archive {
                         hash: HashString::from_str(&load_context.path().to_string_lossy()),
                         source_path: load_context.path().into(),
-                        target_path: load_context.path().into(),
-                        entries: Arc::new(
-                            archive
-                                .entries
-                                .into_iter()
-                                .map(|(k, v)| {
-                                    (HashString::from_str(&k), ArchiveEntry::Preloaded(v))
-                                })
-                                .collect(),
-                        ),
+                        target_path: PathBuf::default(),
+                        entries: archive
+                            .entries
+                            .into_iter()
+                            .map(|(k, v)| (HashString::from_str(&k), ArchiveEntry::Preloaded(v)))
+                            .collect(),
                     })
                 }
                 Some(extension) => Err(ArchiveError::UnknownFormat {
