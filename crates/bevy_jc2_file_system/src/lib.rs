@@ -46,12 +46,14 @@ impl FileSystemMounts {
         asset_server: &AssetServer,
         path: impl Into<PathBuf> + Into<AssetPath<'a>> + Clone,
     ) -> &Self {
+        // TODO: check that an archive isn't already mounted/pending
         let entry = (path.clone().into(), asset_server.load(path));
         self.pending_archives.push(entry);
         self
     }
 
     pub fn unmount_archive(&mut self, path: impl Into<PathBuf>) -> &Self {
+        // TODO: remove from mounts as well
         let path = path.into();
         self.pending_archives.retain(|(p, _)| *p != path);
         self
@@ -79,7 +81,6 @@ impl Plugin for FileSystemPlugin {
 
     fn finish(&self, app: &mut App) {
         app.init_asset::<Archive>()
-            .preregister_asset_loader::<ArchiveLoader>(&["rbm"])
             .register_asset_loader(ArchiveLoader);
     }
 }
@@ -89,6 +90,7 @@ fn process_archive_events(
     mut events: EventReader<AssetEvent<Archive>>,
     mut mounts: ResMut<FileSystemMounts>,
 ) {
+    // TODO: make sure original mounting order is respected
     for archive in events
         .read()
         .filter_map(|e| match e {

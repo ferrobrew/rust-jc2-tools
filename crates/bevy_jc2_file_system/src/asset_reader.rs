@@ -12,7 +12,7 @@ use futures_io::{AsyncRead, AsyncSeek};
 use futures_lite::Stream;
 use jc2_hashing::HashString;
 
-use crate::FileSystemMountsData;
+use crate::{archive::ArchiveEntry, FileSystemMountsData};
 
 pub struct FileSystemAssetReader {
     mounts: Arc<FileSystemMountsData>,
@@ -76,19 +76,27 @@ impl FileSystemAssetReader {
                     continue;
                 };
 
-                // Get the archive path from mounted directories
-                let Some(path) = self.mounts.directories.read().iter().find_map(|directory| {
-                    let path = directory.join(&archive.path);
-                    path.is_file().then_some(path)
-                }) else {
-                    continue;
-                };
+                let buffer = match &entry {
+                    ArchiveEntry::Streamed(streamed) => {
+                        // Get the archive path from mounted directories
+                        let Some(path) =
+                            self.mounts.directories.read().iter().find_map(|directory| {
+                                let path = directory.join(&archive.path);
+                                path.is_file().then_some(path)
+                            })
+                        else {
+                            continue;
+                        };
 
-                // Open the archive, read the file, and create a cursor
-                let mut file = File::open(path)?;
-                file.seek(std::io::SeekFrom::Start(entry.offset as u64))?;
-                let mut buffer = vec![0u8; entry.size as usize];
-                file.read_exact(&mut buffer)?;
+                        // Open the archive, read the file, and create a cursor
+                        let mut file = File::open(path)?;
+                        file.seek(std::io::SeekFrom::Start(streamed.offset as u64))?;
+                        let mut buffer = vec![0u8; streamed.size as usize];
+                        file.read_exact(&mut buffer)?;
+                        buffer
+                    }
+                    ArchiveEntry::Preloaded(buffer) => buffer.clone(),
+                };
 
                 return Ok(FileReader::from(Cursor::new(buffer)));
             }
