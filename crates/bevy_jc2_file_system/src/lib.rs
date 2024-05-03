@@ -8,7 +8,10 @@ use bevy::{
 };
 use jc2_hashing::HashString;
 use parking_lot::RwLock;
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 mod archive;
 use archive::{Archive, ArchiveLoader};
@@ -43,8 +46,8 @@ pub struct FileSystemMounts {
 }
 
 impl FileSystemMounts {
-    pub fn mount_directory(&mut self, path: impl Into<PathBuf>) -> &Self {
-        let path = path.into();
+    pub fn mount_directory(&mut self, path: impl AsRef<Path>) -> &Self {
+        let path: PathBuf = path.as_ref().into();
         {
             let mut directories = self.mounts.directories.write();
             let directory_count = directories.len();
@@ -58,8 +61,8 @@ impl FileSystemMounts {
         self
     }
 
-    pub fn unmount_directory(&mut self, path: impl Into<PathBuf>) -> &Self {
-        let path: PathBuf = path.into();
+    pub fn unmount_directory(&mut self, path: impl AsRef<Path>) -> &Self {
+        let path: PathBuf = path.as_ref().into();
 
         // Attempt to unmount the archive, and validate success
         {
@@ -98,8 +101,8 @@ impl FileSystemMounts {
         self
     }
 
-    pub fn mount_archive(&mut self, asset_server: &AssetServer, path: impl Into<PathBuf>) -> &Self {
-        let path: PathBuf = path.into();
+    pub fn mount_archive(&mut self, asset_server: &AssetServer, path: impl AsRef<Path>) -> &Self {
+        let path: PathBuf = path.as_ref().into();
         let hash = HashString::from_str(&path.to_string_lossy());
         for archive in self.mounts.archives.read().iter() {
             if archive.hash == hash {
@@ -113,8 +116,8 @@ impl FileSystemMounts {
         self
     }
 
-    pub fn unmount_archive(&mut self, path: impl Into<PathBuf>) -> &Self {
-        let path: PathBuf = path.into();
+    pub fn unmount_archive(&mut self, path: impl AsRef<Path>) -> &Self {
+        let path: PathBuf = path.as_ref().into();
         let hash = HashString::from_str(&path.to_string_lossy());
         {
             let mut archives = self.mounts.archives.write();
