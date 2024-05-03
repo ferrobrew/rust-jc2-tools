@@ -27,7 +27,7 @@ pub(crate) enum ArchiveEntry {
 pub(crate) struct Archive {
     pub(crate) hash: HashString,
     pub(crate) source_path: PathBuf,
-    pub(crate) target_path: PathBuf,
+    pub(crate) target_path: Option<PathBuf>,
     pub(crate) entries: HashMap<HashString, ArchiveEntry>,
 }
 
@@ -56,7 +56,7 @@ impl AssetLoader for ArchiveLoader {
                     Ok(Archive {
                         hash: HashString::from_str(&load_context.path().to_string_lossy()),
                         source_path: load_context.path().into(),
-                        target_path: load_context.path().with_extension("arc"),
+                        target_path: Some(load_context.path().with_extension("arc")),
                         entries: archive
                             .entries
                             .into_iter()
@@ -69,7 +69,7 @@ impl AssetLoader for ArchiveLoader {
                     Ok(Archive {
                         hash: HashString::from_str(&load_context.path().to_string_lossy()),
                         source_path: load_context.path().into(),
-                        target_path: PathBuf::default(),
+                        target_path: None,
                         entries: archive
                             .entries
                             .into_iter()

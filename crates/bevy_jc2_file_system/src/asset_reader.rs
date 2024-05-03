@@ -86,10 +86,15 @@ impl FileSystemAssetReader {
 
                 let buffer = match &entry {
                     ArchiveEntry::Streamed(streamed) => {
+                        // If the target path is not set, something went very wrong
+                        let Some(target_path) = &archive.target_path else {
+                            unreachable!("`archive.target_path` was not set!");
+                        };
+
                         // Get the archive path from mounted directories
                         let Some(path) =
                             self.mounts.directories.read().iter().find_map(|directory| {
-                                let path = directory.join(&archive.target_path);
+                                let path = directory.join(target_path);
                                 path.is_file().then_some(path)
                             })
                         else {

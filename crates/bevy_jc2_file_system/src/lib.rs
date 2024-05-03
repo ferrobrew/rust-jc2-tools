@@ -60,15 +60,41 @@ impl FileSystemMounts {
 
     pub fn unmount_directory(&mut self, path: impl Into<PathBuf>) -> &Self {
         let path: PathBuf = path.into();
+
+        // Attempt to unmount the archive, and validate success
         {
             let mut directories = self.mounts.directories.write();
             let directory_count = directories.len();
             directories.retain(|directory| directory != &path);
-            if directories.len() < directory_count {
-                self.pending_events
-                    .push(FileSystemEvent::DirectoryUnmounted { path });
+            if directories.len() == directory_count {
+                return self;
             }
         }
+
+        self.pending_events
+            .push(FileSystemEvent::DirectoryUnmounted { path: path.clone() });
+
+        // We must now unmount corresponding archives, leaving streaming archives alone
+        {
+            let mut archives = self.mounts.archives.write();
+            archives.retain(|archive| {
+                // We skip archives without a `target_path`
+                let Some(target_path) = &archive.target_path else {
+                    return true;
+                };
+
+                // This is not bullet-proof, as multiple directories could contain `target_path`
+                // Better to be safe than sorry, and it's *very* unlikely this will ever occur
+                let unmount = path.join(target_path).is_file();
+                if unmount {
+                    self.pending_events.push(FileSystemEvent::ArchiveUnmounted {
+                        path: target_path.clone(),
+                    });
+                }
+                unmount
+            });
+        }
+
         self
     }
 
@@ -172,10 +198,28 @@ fn process_archive_events(
         })
         .filter_map(|h| archives.remove(h))
     {
-        event_writer.send(FileSystemEvent::ArchivePending {
+        let hash = archive.hash;
+
+        // Validate that the `target_path` still exists
+        if let Some(target_path) = &archive.target_path {
+            let exists = mounts
+                .mounts
+                .directories
+                .read()
+                .iter()
+                .any(|directory| directory.join(target_path).is_file());
+            if !exists {
+                event_writer.send(FileSystemEvent::ArchiveError {
+                    path: archive.source_path,
+                });
+                mounts.pending_archives.remove(&hash);
+                continue;
+            }
+        };
+
+        event_writer.send(FileSystemEvent::ArchiveMounted {
             path: archive.source_path.clone(),
         });
-        let hash = archive.hash;
         mounts.mounts.archives.write().push(archive);
         mounts.pending_archives.remove(&hash);
     }
@@ -185,8 +229,7 @@ fn process_archive_events(
         event_writer.send(FileSystemEvent::ArchiveError {
             path: path.path().into(),
         });
-        mounts
-            .pending_archives
-            .remove(&HashString::from_str(&path.to_string()));
+        let hash = HashString::from_str(&path.to_string());
+        mounts.pending_archives.remove(&hash);
     }
 }
