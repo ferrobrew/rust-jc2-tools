@@ -98,6 +98,26 @@ impl FileSystemMounts {
         self.pending_archives.remove(&hash);
         self
     }
+
+    pub fn is_mounting_archives(&self) -> bool {
+        !self.pending_archives.is_empty()
+    }
+
+    pub fn is_mounting_archive(&self, path: impl Into<PathBuf>) -> bool {
+        let path: PathBuf = path.into();
+        let hash = HashString::from_str(&path.to_string_lossy());
+        self.pending_archives.contains_key(&hash)
+    }
+
+    pub fn has_mounted_archive(&self, path: impl Into<PathBuf>) -> bool {
+        let path: PathBuf = path.into();
+        let hash = HashString::from_str(&path.to_string_lossy());
+        self.mounts
+            .archives
+            .read()
+            .iter()
+            .any(|archive| archive.hash == hash)
+    }
 }
 
 impl Plugin for FileSystemPlugin {
