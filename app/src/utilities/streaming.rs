@@ -19,7 +19,6 @@ impl Plugin for StreamingPlugin {
 pub struct StreamingData {
     pending: Vec<PathBuf>,
     ready: Vec<PathBuf>,
-    error: Vec<PathBuf>,
 }
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
