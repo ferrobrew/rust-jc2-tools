@@ -19,30 +19,55 @@ use asset_reader::FileSystemAssetReader;
 #[derive(Default, Debug)]
 pub struct FileSystemPlugin;
 
+#[derive(Event, Debug)]
+pub enum FileSystemEvent {
+    DirectoryMounted { path: PathBuf },
+    DirectoryUnmounted { path: PathBuf },
+    ArchiveMounted { path: PathBuf },
+    ArchiveUnmounted { path: PathBuf },
+    ArchiveError { path: PathBuf },
+}
+
 #[derive(Default, Debug)]
 pub struct FileSystemMountsData {
     pub(crate) directories: RwLock<Vec<PathBuf>>,
     pub(crate) archives: RwLock<Vec<Archive>>,
 }
 
-#[derive(Resource, Default, Debug, Clone)]
+#[derive(Resource, Default, Debug)]
 pub struct FileSystemMounts {
     pub(crate) mounts: Arc<FileSystemMountsData>,
     pub(crate) pending_archives: HashMap<HashString, Handle<Archive>>,
+    pub(crate) pending_events: Vec<FileSystemEvent>,
 }
 
 impl FileSystemMounts {
-    pub fn mount_directory(&self, path: impl Into<PathBuf>) -> &Self {
-        let directory = path.into();
-        let mut directories = self.mounts.directories.write();
-        directories.retain(|d| *d != directory);
-        directories.push(directory);
+    pub fn mount_directory(&mut self, path: impl Into<PathBuf>) -> &Self {
+        let path = path.into();
+        {
+            let mut directories = self.mounts.directories.write();
+            let directory_count = directories.len();
+            directories.retain(|directory| *directory != path);
+            directories.push(path.clone());
+            if directories.len() > directory_count {
+                self.pending_events
+                    .push(FileSystemEvent::DirectoryMounted { path });
+            }
+        }
         self
     }
 
-    pub fn unmount_directory(&self, path: impl Into<PathBuf>) -> &Self {
-        let directory: PathBuf = path.into();
-        self.mounts.directories.write().retain(|d| *d != directory);
+    pub fn unmount_directory(&mut self, path: impl Into<PathBuf>) -> &Self {
+        let path: PathBuf = path.into();
+        {
+            let mut directories = self.mounts.directories.write();
+            let directory_count = directories.len();
+            directories.retain(|directory| directory != &path);
+            if directories.len() < directory_count {
+                self.pending_events
+                    .push(FileSystemEvent::DirectoryUnmounted { path });
+            }
+        }
         self
     }
 
@@ -61,10 +86,15 @@ impl FileSystemMounts {
     pub fn unmount_archive(&mut self, path: impl Into<PathBuf>) -> &Self {
         let path: PathBuf = path.into();
         let hash = HashString::from_str(&path.to_string_lossy());
-        self.mounts
-            .archives
-            .write()
-            .retain(|archive| archive.hash != hash);
+        {
+            let mut archives = self.mounts.archives.write();
+            let archive_count = archives.len();
+            archives.retain(|archive| archive.hash != hash);
+            if archives.len() < archive_count {
+                self.pending_events
+                    .push(FileSystemEvent::ArchiveUnmounted { path });
+            }
+        }
         self.pending_archives.remove(&hash);
         self
     }
@@ -76,6 +106,7 @@ impl Plugin for FileSystemPlugin {
         app.insert_resource(FileSystemMounts {
             mounts: mounts.clone(),
             pending_archives: HashMap::new(),
+            pending_events: Vec::new(),
         })
         .register_asset_source(
             AssetSourceId::Default,
@@ -86,6 +117,7 @@ impl Plugin for FileSystemPlugin {
                 ))
             }),
         )
+        .add_event::<FileSystemEvent>()
         .add_systems(First, process_archive_events);
     }
 
@@ -99,6 +131,7 @@ fn process_archive_events(
     mut archives: ResMut<Assets<Archive>>,
     mut load_events: EventReader<AssetEvent<Archive>>,
     mut failed_events: EventReader<AssetLoadFailedEvent<Archive>>,
+    mut event_writer: EventWriter<FileSystemEvent>,
     mut mounts: ResMut<FileSystemMounts>,
 ) {
     // Process loaded archives
@@ -110,16 +143,26 @@ fn process_archive_events(
         })
         .filter_map(|h| archives.remove(h))
     {
+        event_writer.send(FileSystemEvent::ArchiveMounted {
+            path: archive.source_path.clone(),
+        });
         let hash = archive.hash;
         mounts.mounts.archives.write().push(archive);
         mounts.pending_archives.remove(&hash);
     }
 
     // Process failed archives
-    for hash in failed_events
-        .read()
-        .map(|event| HashString::from_str(&event.path.to_string()))
-    {
-        mounts.pending_archives.remove(&hash);
+    for path in failed_events.read().map(|event| &event.path) {
+        event_writer.send(FileSystemEvent::ArchiveError {
+            path: path.path().into(),
+        });
+        mounts
+            .pending_archives
+            .remove(&HashString::from_str(&path.to_string()));
+    }
+
+    // Process pending events
+    for event in mounts.pending_events.drain(..) {
+        event_writer.send(event);
     }
 }

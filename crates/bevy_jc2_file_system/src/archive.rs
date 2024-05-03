@@ -26,7 +26,8 @@ pub(crate) enum ArchiveEntry {
 #[derive(Asset, Debug, Clone, TypePath)]
 pub(crate) struct Archive {
     pub(crate) hash: HashString,
-    pub(crate) path: PathBuf,
+    pub(crate) source_path: PathBuf,
+    pub(crate) target_path: PathBuf,
     pub(crate) entries: Arc<HashMap<HashString, ArchiveEntry>>,
 }
 
@@ -54,7 +55,8 @@ impl AssetLoader for ArchiveLoader {
                     let archive = ArchiveTable::read(&mut cursor)?;
                     Ok(Archive {
                         hash: HashString::from_str(&load_context.path().to_string_lossy()),
-                        path: load_context.path().with_extension("arc"),
+                        source_path: load_context.path().into(),
+                        target_path: load_context.path().with_extension("arc"),
                         entries: Arc::new(
                             archive
                                 .entries
@@ -68,7 +70,8 @@ impl AssetLoader for ArchiveLoader {
                     let archive = StreamArchive::read(&mut cursor)?;
                     Ok(Archive {
                         hash: HashString::from_str(&load_context.path().to_string_lossy()),
-                        path: load_context.path().into(),
+                        source_path: load_context.path().into(),
+                        target_path: load_context.path().into(),
                         entries: Arc::new(
                             archive
                                 .entries

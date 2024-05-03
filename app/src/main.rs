@@ -112,10 +112,10 @@ fn startup_system(
 
 fn open_render_block(
     asset_server: Res<AssetServer>,
-    mounts: Res<FileSystemMounts>,
     mut app_data: ResMut<AppData>,
     mut commands: Commands,
     mut events: EventReader<DialogFilePicked<RenderBlockMesh>>,
+    mut mounts: ResMut<FileSystemMounts>,
 ) {
     for path in events.read().map(|e| e.path.clone()) {
         let Some(directory) = path.parent() else {

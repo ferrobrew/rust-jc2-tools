@@ -89,10 +89,11 @@ impl FileSystemAssetReader {
                         // Get the archive path from mounted directories
                         let Some(path) =
                             self.mounts.directories.read().iter().find_map(|directory| {
-                                let path = directory.join(&archive.path);
+                                let path = directory.join(&archive.target_path);
                                 path.is_file().then_some(path)
                             })
                         else {
+                            // Currently impossible to use bevy_assets::get_base_path() as a fallback...
                             continue;
                         };
 
