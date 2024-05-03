@@ -23,6 +23,7 @@ pub struct FileSystemPlugin;
 pub enum FileSystemEvent {
     DirectoryMounted { path: PathBuf },
     DirectoryUnmounted { path: PathBuf },
+    ArchivePending { path: PathBuf },
     ArchiveMounted { path: PathBuf },
     ArchiveUnmounted { path: PathBuf },
     ArchiveError { path: PathBuf },
@@ -79,7 +80,10 @@ impl FileSystemMounts {
                 return self;
             }
         }
-        self.pending_archives.insert(hash, asset_server.load(path));
+        self.pending_archives
+            .insert(hash, asset_server.load(path.clone()));
+        self.pending_events
+            .push(FileSystemEvent::ArchivePending { path });
         self
     }
 
@@ -154,6 +158,11 @@ fn process_archive_events(
     mut event_writer: EventWriter<FileSystemEvent>,
     mut mounts: ResMut<FileSystemMounts>,
 ) {
+    // Process pending events
+    for event in mounts.pending_events.drain(..) {
+        event_writer.send(event);
+    }
+
     // Process loaded archives
     for archive in load_events
         .read()
@@ -163,7 +172,7 @@ fn process_archive_events(
         })
         .filter_map(|h| archives.remove(h))
     {
-        event_writer.send(FileSystemEvent::ArchiveMounted {
+        event_writer.send(FileSystemEvent::ArchivePending {
             path: archive.source_path.clone(),
         });
         let hash = archive.hash;
@@ -179,10 +188,5 @@ fn process_archive_events(
         mounts
             .pending_archives
             .remove(&HashString::from_str(&path.to_string()));
-    }
-
-    // Process pending events
-    for event in mounts.pending_events.drain(..) {
-        event_writer.send(event);
     }
 }
