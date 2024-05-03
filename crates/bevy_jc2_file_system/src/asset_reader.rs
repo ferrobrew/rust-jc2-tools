@@ -14,7 +14,7 @@ use jc2_hashing::HashString;
 
 use crate::{archive::ArchiveEntry, FileSystemMountsData};
 
-pub struct FileSystemAssetReader {
+pub(crate) struct FileSystemAssetReader {
     mounts: Arc<FileSystemMountsData>,
     default_reader: Box<dyn AssetReader>,
 }
@@ -40,6 +40,14 @@ impl FileSystemAssetReader {
     }
 
     fn is_file(&self, path: &Path) -> bool {
+        // Check mounted directories for our file, using the full path
+        for directory in self.mounts.directories.read().iter() {
+            let file = directory.join(path);
+            if file.is_file() {
+                return true;
+            }
+        }
+
         // Check mounted archives for our file, using only the name
         if let Some(hash) = path
             .file_name()
@@ -52,20 +60,20 @@ impl FileSystemAssetReader {
             }
         }
 
-        // Check mounted directories for our file, using the full path
-        for directory in self.mounts.directories.read().iter() {
-            let file = directory.join(path);
-            if file.is_file() {
-                return true;
-            }
-        }
-
         // Nothing found
         false
     }
 
     fn read_file(&self, path: &Path) -> Result<FileReader, AssetReaderError> {
-        // Attempt to get a reader from mounted archives, using only name
+        // Attempt to get a reader from mounted directories, using the full path
+        for directory in self.mounts.directories.read().iter() {
+            let file = directory.join(path);
+            if file.is_file() {
+                return Ok(FileReader::from(File::open(file)?));
+            }
+        }
+
+        // Attempt to get a reader from mounted archives, using only the name
         if let Some(hash) = path
             .file_name()
             .map(|name| HashString::from_bytes(name.as_encoded_bytes()))
@@ -102,15 +110,7 @@ impl FileSystemAssetReader {
             }
         }
 
-        // Otherwise, attempt to get a reader from mounted directories
-        for directory in self.mounts.directories.read().iter() {
-            let file = directory.join(path);
-            if file.is_file() {
-                return Ok(FileReader::from(File::open(file)?));
-            }
-        }
-
-        // Seems the asset wasn't found, shame
+        // Nothing found
         Err(AssetReaderError::NotFound(path.into()))
     }
 
