@@ -34,7 +34,6 @@ fn update_streaming_state(
     mut next_state: ResMut<NextState<StreamingState>>,
 ) {
     for event in events.read() {
-        println!("{event:?}");
         match event {
             FileSystemEvent::ArchivePending { path } => data.pending.push(path.clone()),
             FileSystemEvent::ArchiveUnmounted { path } => data.ready.retain(|f| f != path),
