@@ -44,7 +44,7 @@ impl FileSystemAssetReader {
         }
     }
 
-    async fn read_file(&self, path: &Path) -> Result<FileReader, AssetReaderError> {
+    async fn read(&self, path: &Path) -> Result<FileReader, AssetReaderError> {
         // Attempt to get a reader from mounted directories, using the full path
         for directory in self.mounts.directories.read().await.iter() {
             let file = directory.join(path);
@@ -225,9 +225,9 @@ impl AssetReader for FileSystemAssetReader {
         path: &'a Path,
     ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
         Box::pin(async move {
-            match self.read_file(path).await {
+            match self.read(path).await {
                 Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
-                Err(_) => self.default_reader.read_meta(path).await,
+                Err(_) => self.default_reader.read(path).await,
             }
         })
     }
@@ -237,7 +237,7 @@ impl AssetReader for FileSystemAssetReader {
         path: &'a Path,
     ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
         Box::pin(async move {
-            match self.read_file(&get_meta_path(path)).await {
+            match self.read(&get_meta_path(path)).await {
                 Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
                 Err(_) => self.default_reader.read_meta(path).await,
             }
