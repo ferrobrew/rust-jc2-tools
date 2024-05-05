@@ -20,6 +20,9 @@ all-features = true
 jc2_file_formats.workspace = true
 jc2_hashing.workspace = true
 
+async-fs.workspace = true
+async-io.workspace = true
+async-lock.workspace = true
 bevy = { workspace = true, features = [
   "bevy_asset",
 ] }

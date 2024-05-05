@@ -4,7 +4,11 @@ use bevy::{
 };
 use jc2_file_formats::archive::{ArchiveTable, ArchiveTableEntry, StreamArchive};
 use jc2_hashing::HashString;
-use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    path::{Path, PathBuf},
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -13,8 +17,8 @@ pub(crate) enum ArchiveError {
     Binrw(#[from] binrw::Error),
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
-    #[error("unknown format: {extension:?}")]
-    UnknownFormat { extension: Option<String> },
+    #[error("unknown format: {path:?}")]
+    UnknownFormat { path: PathBuf },
 }
 
 #[derive(Debug, Clone)]
@@ -50,21 +54,8 @@ impl AssetLoader for ArchiveLoader {
             reader.read_to_end(&mut bytes).await?;
             let mut cursor = binrw::io::Cursor::new(&bytes);
 
-            match load_context.path().extension().and_then(OsStr::to_str) {
-                Some("tab") => {
-                    let archive = ArchiveTable::read(&mut cursor)?;
-                    Ok(Archive {
-                        hash: HashString::from_str(&load_context.path().to_string_lossy()),
-                        source_path: load_context.path().into(),
-                        target_path: Some(load_context.path().with_extension("arc")),
-                        entries: archive
-                            .entries
-                            .into_iter()
-                            .map(|(k, v)| (k, ArchiveEntry::Streamed(v)))
-                            .collect(),
-                    })
-                }
-                Some("ee") => {
+            match archive_type(load_context.path()) {
+                ArchiveType::Stream => {
                     let archive = StreamArchive::read(&mut cursor)?;
                     Ok(Archive {
                         hash: HashString::from_str(&load_context.path().to_string_lossy()),
@@ -77,11 +68,37 @@ impl AssetLoader for ArchiveLoader {
                             .collect(),
                     })
                 }
-                Some(extension) => Err(ArchiveError::UnknownFormat {
-                    extension: Some(extension.into()),
+                ArchiveType::File => {
+                    let archive = ArchiveTable::read(&mut cursor)?;
+                    Ok(Archive {
+                        hash: HashString::from_str(&load_context.path().to_string_lossy()),
+                        source_path: load_context.path().into(),
+                        target_path: Some(load_context.path().with_extension("arc")),
+                        entries: archive
+                            .entries
+                            .into_iter()
+                            .map(|(k, v)| (k, ArchiveEntry::Streamed(v)))
+                            .collect(),
+                    })
+                }
+                ArchiveType::Unknown => Err(ArchiveError::UnknownFormat {
+                    path: load_context.path().into(),
                 }),
-                None => Err(ArchiveError::UnknownFormat { extension: None }),
             }
         })
+    }
+}
+
+pub(crate) enum ArchiveType {
+    Stream,
+    File,
+    Unknown,
+}
+
+pub(crate) fn archive_type(path: &Path) -> ArchiveType {
+    match path.extension().and_then(OsStr::to_str) {
+        Some("tab") => ArchiveType::File,
+        Some("ee") => ArchiveType::Stream,
+        _ => ArchiveType::Unknown,
     }
 }

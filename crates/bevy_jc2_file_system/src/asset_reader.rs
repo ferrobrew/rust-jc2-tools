@@ -1,18 +1,23 @@
 use std::{
-    fs::{read_dir, File},
-    io::{Cursor, Read, Seek},
     path::{Path, PathBuf},
     pin::Pin,
-    sync::Arc,
+    sync::{atomic::Ordering, Arc},
     task::Poll,
 };
 
-use bevy::asset::io::{AssetReader, AssetReaderError, PathStream, Reader};
-use futures_io::{AsyncRead, AsyncSeek};
-use futures_lite::Stream;
+use async_fs::{read_dir, File};
+use bevy::{
+    asset::io::{AssetReader, AssetReaderError, PathStream, Reader},
+    utils::BoxedFuture,
+};
+use futures_io::{AsyncRead, SeekFrom};
+use futures_lite::{future::yield_now, io::Cursor, AsyncReadExt, AsyncSeekExt, Stream, StreamExt};
 use jc2_hashing::HashString;
 
-use crate::{archive::ArchiveEntry, FileSystemMountsData};
+use crate::{
+    archive::{archive_type, ArchiveEntry, ArchiveType},
+    FileSystemMountsData,
+};
 
 pub(crate) struct FileSystemAssetReader {
     mounts: Arc<FileSystemMountsData>,
@@ -39,38 +44,31 @@ impl FileSystemAssetReader {
         }
     }
 
-    fn is_file(&self, path: &Path) -> bool {
-        // Check mounted directories for our file, using the full path
-        for directory in self.mounts.directories.read().iter() {
+    async fn read_file(&self, path: &Path) -> Result<FileReader, AssetReaderError> {
+        // Attempt to get a reader from mounted directories, using the full path
+        for directory in self.mounts.directories.read().await.iter() {
             let file = directory.join(path);
             if file.is_file() {
-                return true;
+                return Ok(FileReader::from(File::open(file).await?));
             }
         }
 
-        // Check mounted archives for our file, using only the name
-        if let Some(hash) = path
-            .file_name()
-            .map(|name| HashString::from_bytes(name.as_encoded_bytes()))
-        {
-            for archive in self.mounts.archives.read().iter() {
-                if archive.entries.contains_key(&hash) {
-                    return true;
+        // If the file does not come from a mounted directory, then we must wait for archives
+        match archive_type(path) {
+            ArchiveType::Stream => {
+                while self.mounts.pending_archives.load(Ordering::Relaxed) > 0 {
+                    yield_now().await;
                 }
             }
-        }
-
-        // Nothing found
-        false
-    }
-
-    fn read_file(&self, path: &Path) -> Result<FileReader, AssetReaderError> {
-        // Attempt to get a reader from mounted directories, using the full path
-        for directory in self.mounts.directories.read().iter() {
-            let file = directory.join(path);
-            if file.is_file() {
-                return Ok(FileReader::from(File::open(file)?));
+            ArchiveType::Unknown => {
+                while self.mounts.pending_archives.load(Ordering::Relaxed) > 0 {
+                    yield_now().await;
+                }
+                while self.mounts.pending_stream_archives.load(Ordering::Relaxed) > 0 {
+                    yield_now().await;
+                }
             }
+            ArchiveType::File => {}
         }
 
         // Attempt to get a reader from mounted archives, using only the name
@@ -78,7 +76,7 @@ impl FileSystemAssetReader {
             .file_name()
             .map(|name| HashString::from_bytes(name.as_encoded_bytes()))
         {
-            for archive in self.mounts.archives.read().iter() {
+            for archive in self.mounts.archives.read().await.iter() {
                 // Skip archives that don't contain our hash
                 let Some(entry) = archive.entries.get(&hash) else {
                     continue;
@@ -93,20 +91,25 @@ impl FileSystemAssetReader {
 
                         // Get the archive path from mounted directories
                         let Some(path) =
-                            self.mounts.directories.read().iter().find_map(|directory| {
-                                let path = directory.join(target_path);
-                                path.is_file().then_some(path)
-                            })
+                            self.mounts
+                                .directories
+                                .read()
+                                .await
+                                .iter()
+                                .find_map(|directory| {
+                                    let path = directory.join(target_path);
+                                    path.is_file().then_some(path)
+                                })
                         else {
                             // Currently impossible to use bevy_assets::get_base_path() as a fallback...
                             continue;
                         };
 
                         // Open the archive, read the file, and create a cursor
-                        let mut file = File::open(path)?;
-                        file.seek(std::io::SeekFrom::Start(streamed.offset as u64))?;
+                        let mut file = File::open(path).await?;
+                        file.seek(SeekFrom::Start(streamed.offset as u64)).await?;
                         let mut buffer = vec![0u8; streamed.size as usize];
-                        file.read_exact(&mut buffer)?;
+                        file.read_exact(&mut buffer).await?;
                         buffer
                     }
                     ArchiveEntry::Preloaded(buffer) => buffer.clone(),
@@ -120,9 +123,9 @@ impl FileSystemAssetReader {
         Err(AssetReaderError::NotFound(path.into()))
     }
 
-    fn is_directory(&self, path: &Path) -> bool {
+    async fn is_directory(&self, path: &Path) -> bool {
         let folder = path.join("");
-        for directory in self.mounts.directories.read().iter() {
+        for directory in self.mounts.directories.read().await.iter() {
             let file = directory.join(folder.clone());
             if file.is_dir() {
                 return true;
@@ -131,29 +134,32 @@ impl FileSystemAssetReader {
         false
     }
 
-    fn read_directory(&self, path: &Path) -> Result<DirReader, AssetReaderError> {
-        if self.is_directory(path) {
+    async fn read_directory(&self, path: &Path) -> Result<DirReader, AssetReaderError> {
+        if self.is_directory(path).await {
             let mut paths = Vec::new();
-            for directory in self.mounts.directories.read().iter() {
-                if let Ok(read_dir) = read_dir(&directory.join(path)) {
+            for directory in self.mounts.directories.read().await.iter() {
+                if let Ok(read_dir) = read_dir(&directory.join(path)).await {
                     let root_path = directory.clone();
-                    let mapped_stream = read_dir.filter_map(move |f| {
-                        f.ok().and_then(|dir_entry| {
-                            let path = dir_entry.path();
-                            // filter out meta files as they are not considered assets
-                            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                                if ext.eq_ignore_ascii_case("meta") {
-                                    return None;
+                    let mapped_stream: Vec<PathBuf> = read_dir
+                        .filter_map(|f| {
+                            f.ok().and_then(|dir_entry| {
+                                let path = dir_entry.path();
+                                // filter out meta files as they are not considered assets
+                                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                                    if ext.eq_ignore_ascii_case("meta") {
+                                        return None;
+                                    }
                                 }
-                            }
-                            // Should never fail
-                            if let Ok(relative_path) = path.strip_prefix(&root_path) {
-                                Some(relative_path.to_owned())
-                            } else {
-                                None
-                            }
+                                // Should never fail
+                                if let Ok(relative_path) = path.strip_prefix(&root_path) {
+                                    Some(relative_path.to_owned())
+                                } else {
+                                    None
+                                }
+                            })
                         })
-                    });
+                        .collect()
+                        .await;
                     paths.extend(mapped_stream);
                 }
             }
@@ -164,48 +170,27 @@ impl FileSystemAssetReader {
     }
 }
 
-enum FileReaderValue {
-    File(File),
-    Cursor(Cursor<Vec<u8>>),
-}
+struct FileReader<'a>(Box<Reader<'a>>);
 
-struct FileReader(FileReaderValue);
-
-impl From<File> for FileReader {
+impl<'a> From<File> for FileReader<'a> {
     fn from(value: File) -> Self {
-        Self(FileReaderValue::File(value))
+        Self(Box::new(value))
     }
 }
 
-impl From<Cursor<Vec<u8>>> for FileReader {
+impl<'a> From<Cursor<Vec<u8>>> for FileReader<'a> {
     fn from(value: Cursor<Vec<u8>>) -> Self {
-        Self(FileReaderValue::Cursor(value))
+        Self(Box::new(value))
     }
 }
 
-impl AsyncRead for FileReader {
+impl<'a> AsyncRead for FileReader<'a> {
     fn poll_read(
         self: Pin<&mut Self>,
-        _cx: &mut std::task::Context<'_>,
+        cx: &mut std::task::Context<'_>,
         buf: &mut [u8],
     ) -> Poll<std::io::Result<usize>> {
-        Poll::Ready(match &mut self.get_mut().0 {
-            FileReaderValue::File(file) => file.read(buf),
-            FileReaderValue::Cursor(cursor) => cursor.read(buf),
-        })
-    }
-}
-
-impl AsyncSeek for FileReader {
-    fn poll_seek(
-        self: Pin<&mut Self>,
-        _cx: &mut std::task::Context<'_>,
-        pos: std::io::SeekFrom,
-    ) -> Poll<std::io::Result<u64>> {
-        Poll::Ready(match &mut self.get_mut().0 {
-            FileReaderValue::File(file) => file.seek(pos),
-            FileReaderValue::Cursor(cursor) => cursor.seek(pos),
-        })
+        std::pin::pin!(&mut self.get_mut().0).poll_read(cx, buf)
     }
 }
 
@@ -238,60 +223,59 @@ impl AssetReader for FileSystemAssetReader {
     fn read<'a>(
         &'a self,
         path: &'a Path,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
-        if self.is_file(path) {
-            Box::pin(async move {
-                self.read_file(path).map(|reader| {
-                    let boxed: Box<Reader> = Box::new(reader);
-                    boxed
-                })
-            })
-        } else {
-            self.default_reader.read(path)
-        }
+    ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
+        Box::pin(async move {
+            match self.read_file(path).await {
+                Ok(reader) => {
+                    let reader: Box<Reader> = Box::new(reader);
+                    Ok(reader)
+                }
+                Err(_) => self.default_reader.read_meta(path).await,
+            }
+        })
     }
 
     fn read_meta<'a>(
         &'a self,
         path: &'a Path,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
-        let meta_path = get_meta_path(path);
-        if self.is_file(&meta_path) {
-            Box::pin(async move {
-                self.read_file(&meta_path).map(|reader| {
-                    let boxed: Box<Reader> = Box::new(reader);
-                    boxed
-                })
-            })
-        } else {
-            self.default_reader.read_meta(path)
-        }
+    ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
+        Box::pin(async move {
+            match self.read_file(&get_meta_path(path)).await {
+                Ok(reader) => {
+                    let reader: Box<Reader> = Box::new(reader);
+                    Ok(reader)
+                }
+                Err(_) => self.default_reader.read_meta(path).await,
+            }
+        })
     }
 
     fn read_directory<'a>(
         &'a self,
         path: &'a Path,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Box<PathStream>, AssetReaderError>> {
-        if self.is_directory(path) {
-            Box::pin(async move {
-                self.read_directory(path).map(|read_dir| {
+    ) -> BoxedFuture<'a, Result<Box<PathStream>, AssetReaderError>> {
+        Box::pin(async move {
+            if self.is_directory(path).await {
+                self.read_directory(path).await.map(|read_dir| {
                     let boxed: Box<PathStream> = Box::new(read_dir);
                     boxed
                 })
-            })
-        } else {
-            self.default_reader.read_directory(path)
-        }
+            } else {
+                self.default_reader.read_directory(path).await
+            }
+        })
     }
 
     fn is_directory<'a>(
         &'a self,
         path: &'a Path,
-    ) -> bevy::utils::BoxedFuture<'a, Result<bool, AssetReaderError>> {
-        if self.is_directory(path) {
-            Box::pin(async move { Ok(true) })
-        } else {
-            self.default_reader.is_directory(path)
-        }
+    ) -> BoxedFuture<'a, Result<bool, AssetReaderError>> {
+        Box::pin(async move {
+            if self.is_directory(path).await {
+                Ok(true)
+            } else {
+                self.default_reader.is_directory(path).await
+            }
+        })
     }
 }
