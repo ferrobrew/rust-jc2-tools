@@ -226,10 +226,7 @@ impl AssetReader for FileSystemAssetReader {
     ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
         Box::pin(async move {
             match self.read_file(path).await {
-                Ok(reader) => {
-                    let reader: Box<Reader> = Box::new(reader);
-                    Ok(reader)
-                }
+                Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
                 Err(_) => self.default_reader.read_meta(path).await,
             }
         })
@@ -241,10 +238,7 @@ impl AssetReader for FileSystemAssetReader {
     ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
         Box::pin(async move {
             match self.read_file(&get_meta_path(path)).await {
-                Ok(reader) => {
-                    let reader: Box<Reader> = Box::new(reader);
-                    Ok(reader)
-                }
+                Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
                 Err(_) => self.default_reader.read_meta(path).await,
             }
         })
@@ -256,10 +250,9 @@ impl AssetReader for FileSystemAssetReader {
     ) -> BoxedFuture<'a, Result<Box<PathStream>, AssetReaderError>> {
         Box::pin(async move {
             if self.is_directory(path).await {
-                self.read_directory(path).await.map(|read_dir| {
-                    let boxed: Box<PathStream> = Box::new(read_dir);
-                    boxed
-                })
+                self.read_directory(path)
+                    .await
+                    .map(|read_dir| Box::new(read_dir) as Box<PathStream>)
             } else {
                 self.default_reader.read_directory(path).await
             }
