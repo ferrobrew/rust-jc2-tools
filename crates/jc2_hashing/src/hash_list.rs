@@ -51,13 +51,13 @@ impl HashList {
     }
 
     #[inline]
-    pub fn insert_string<S: Into<String>>(&mut self, string: S) {
+    pub fn insert_string(&mut self, string: impl Into<String>) {
         let string: String = string.into();
         self.0.insert(HashString::from_str(&string), string.into());
     }
 
     #[inline]
-    pub fn insert_path<P: Into<PathBuf>>(&mut self, path: P) {
+    pub fn insert_path(&mut self, path: impl Into<PathBuf>) {
         let path: PathBuf = path.into();
         if let Some(hash) = HashString::from_path(&path) {
             self.0.insert(hash, path.into());
