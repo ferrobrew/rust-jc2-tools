@@ -29,5 +29,6 @@ bevy = { workspace = true, features = [
 binrw.workspace = true
 futures-io.workspace = true
 futures-lite.workspace = true
+lexical-sort.workspace = true
 parking_lot.workspace = true
 thiserror.workspace = true

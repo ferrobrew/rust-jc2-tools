@@ -22,6 +22,9 @@ use archive::{archive_type, Archive, ArchiveLoader, ArchiveType};
 mod asset_reader;
 use asset_reader::FileSystemAssetReader;
 
+mod tree;
+pub use tree::{FileSystemTree, FileSystemTreeIter, FileSystemTreeIterValue};
+
 #[derive(Default, Debug)]
 pub struct FileSystemPlugin;
 

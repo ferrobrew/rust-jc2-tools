@@ -40,6 +40,7 @@ gltf = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
 gltf-json = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
 image = { version = "0.25", default-features = false }
 itertools = "0.12"
+lexical-sort = "0.3"
 num-traits = "0.2"
 parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
 paste = "1.0"
