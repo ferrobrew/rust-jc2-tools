@@ -9,6 +9,7 @@ type Iter<'a> = std::collections::hash_map::Iter<'a, HashString, HashEntry>;
 type IterMut<'a> = std::collections::hash_map::IterMut<'a, HashString, HashEntry>;
 type Keys<'a> = std::collections::hash_map::Keys<'a, HashString, HashEntry>;
 type Values<'a> = std::collections::hash_map::Values<'a, HashString, HashEntry>;
+type IntoIter = std::collections::hash_map::IntoIter<HashString, HashEntry>;
 
 #[derive(Debug, Clone)]
 pub enum HashEntry {
@@ -139,6 +140,16 @@ impl HashList {
     #[inline]
     pub fn clear(&mut self) {
         self.0.clear();
+    }
+}
+
+impl IntoIterator for HashList {
+    type IntoIter = IntoIter;
+    type Item = (HashString, HashEntry);
+
+    #[inline]
+    fn into_iter(self) -> IntoIter {
+        self.0.into_iter()
     }
 }
 
