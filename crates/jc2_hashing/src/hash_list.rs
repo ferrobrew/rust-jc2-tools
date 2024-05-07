@@ -9,6 +9,8 @@ type Iter<'a> = std::collections::hash_map::Iter<'a, HashString, HashEntry>;
 type IterMut<'a> = std::collections::hash_map::IterMut<'a, HashString, HashEntry>;
 type Keys<'a> = std::collections::hash_map::Keys<'a, HashString, HashEntry>;
 type Values<'a> = std::collections::hash_map::Values<'a, HashString, HashEntry>;
+type IntoKeys = std::collections::hash_map::IntoKeys<HashString, HashEntry>;
+type IntoValues = std::collections::hash_map::IntoValues<HashString, HashEntry>;
 type IntoIter = std::collections::hash_map::IntoIter<HashString, HashEntry>;
 
 #[derive(Debug, Clone)]
@@ -106,6 +108,16 @@ impl HashList {
     #[inline]
     pub fn values(&self) -> Values {
         self.0.values()
+    }
+
+    #[inline]
+    pub fn into_keys(self) -> IntoKeys {
+        self.0.into_keys()
+    }
+
+    #[inline]
+    pub fn into_values(self) -> IntoValues {
+        self.0.into_values()
     }
 
     #[inline]
