@@ -5,6 +5,11 @@ use std::{
 
 use crate::HashString;
 
+type Iter<'a> = std::collections::hash_map::Iter<'a, HashString, HashEntry>;
+type IterMut<'a> = std::collections::hash_map::IterMut<'a, HashString, HashEntry>;
+type Keys<'a> = std::collections::hash_map::Keys<'a, HashString, HashEntry>;
+type Values<'a> = std::collections::hash_map::Values<'a, HashString, HashEntry>;
+
 #[derive(Debug, Clone)]
 pub enum HashEntry {
     String(String),
@@ -47,12 +52,39 @@ impl From<PathBuf> for HashEntry {
 pub struct HashList(HashMap<HashString, HashEntry>);
 
 impl HashList {
+    #[inline]
     pub fn new() -> Self {
         Self(HashMap::new())
     }
 
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self(HashMap::with_capacity(capacity))
+    }
+
+    #[inline]
+    pub fn extend<T: IntoIterator<Item = (HashString, HashEntry)>>(&mut self, iter: T) {
+        self.0.extend(iter);
+    }
+
+    #[inline]
+    pub fn keys(&self) -> Keys {
+        self.0.keys()
+    }
+
+    #[inline]
+    pub fn values(&self) -> Values {
+        self.0.values()
+    }
+
+    #[inline]
+    pub fn iter(&self) -> Iter {
+        self.0.iter()
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> IterMut {
+        self.0.iter_mut()
     }
 
     #[inline]
@@ -105,5 +137,37 @@ impl HashList {
     #[inline]
     pub fn clear(&mut self) {
         self.0.clear();
+    }
+}
+
+impl<'a> IntoIterator for &'a HashList {
+    type IntoIter = Iter<'a>;
+    type Item = (&'a HashString, &'a HashEntry);
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut HashList {
+    type IntoIter = IterMut<'a>;
+    type Item = (&'a HashString, &'a mut HashEntry);
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
+impl FromIterator<(HashString, HashEntry)> for HashList {
+    fn from_iter<T: IntoIterator<Item = (HashString, HashEntry)>>(iter: T) -> Self {
+        Self(HashMap::from_iter(iter))
+    }
+}
+
+impl<const N: usize> From<[(HashString, HashEntry); N]> for HashList {
+    fn from(arr: [(HashString, HashEntry); N]) -> Self {
+        Self::from_iter(arr)
     }
 }
