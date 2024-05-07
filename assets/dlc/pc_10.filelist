@@ -1,0 +1,10 @@
+; 9/9 (100%)
+exported\dlc\pack_1\mod.heavydrop.airzooka.ee
+exported\dlc\pack_1\mod.heavydrop.airzooka.eez
+global\dlc\pack_1\1_weapon_location.blz
+settings\dlc\pack_1\1_blackmarket.bin
+settings\dlc\pack_1\1_dlcinfo.bin
+settings\dlc\pack_1\1_weapons.bin
+text\dlc\pack_1\1_locator.csv
+textures\gui\dlc\pack_1\bm_az.dds
+textures\gui\dlc\pack_1\hud_az_dif.dds

@@ -1,0 +1,10 @@
+; 9/9 (100%)
+exported\dlc\pack_3\mod.heavydrop.siggun.ee
+exported\dlc\pack_3\mod.heavydrop.siggun.eez
+global\dlc\pack_3\3_weapon_location.blz
+settings\dlc\pack_3\3_blackmarket.bin
+settings\dlc\pack_3\3_dlcinfo.bin
+settings\dlc\pack_3\3_weapons.bin
+text\dlc\pack_3\3_locator.csv
+textures\gui\dlc\pack_3\bm_sg.dds
+textures\gui\dlc\pack_3\hud_signaturegun_dif.dds

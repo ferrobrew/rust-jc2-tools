@@ -1,0 +1,10 @@
+; 9/9 (100%)
+exported\dlc\pack_4\mod.heavydrop.quadrocketlauncher.ee
+exported\dlc\pack_4\mod.heavydrop.quadrocketlauncher.eez
+global\dlc\pack_4\4_weapon_location.blz
+settings\dlc\pack_4\4_blackmarket.bin
+settings\dlc\pack_4\4_dlcinfo.bin
+settings\dlc\pack_4\4_weapons.bin
+text\dlc\pack_4\4_locator.csv
+textures\gui\dlc\pack_4\bm_qrl.dds
+textures\gui\dlc\pack_4\hud_qrl_dif.dds

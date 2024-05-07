@@ -1,0 +1,10 @@
+; 9/9 (100%)
+exported\dlc\pack_5\mod.heavydrop.multitargetrocketlauncher.ee
+exported\dlc\pack_5\mod.heavydrop.multitargetrocketlauncher.eez
+global\dlc\pack_5\5_weapon_location.blz
+settings\dlc\pack_5\5_blackmarket.bin
+settings\dlc\pack_5\5_dlcinfo.bin
+settings\dlc\pack_5\5_weapons.bin
+text\dlc\pack_5\5_locator.csv
+textures\gui\dlc\pack_5\bm_mrl.dds
+textures\gui\dlc\pack_5\hud_mrl_dif.dds

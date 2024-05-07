@@ -1,0 +1,10 @@
+; 9/9 (100%)
+exported\dlc\pack_2\mod.heavydrop.clusterbomb.ee
+exported\dlc\pack_2\mod.heavydrop.clusterbomb.eez
+global\dlc\pack_2\2_weapon_location.blz
+settings\dlc\pack_2\2_blackmarket.bin
+settings\dlc\pack_2\2_dlcinfo.bin
+settings\dlc\pack_2\2_weapons.bin
+text\dlc\pack_2\2_locator.csv
+textures\gui\dlc\pack_2\bm_cgl.dds
+textures\gui\dlc\pack_2\hud_cgl_dif.dds

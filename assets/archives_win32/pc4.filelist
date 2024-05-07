@@ -1,0 +1,14 @@
+; 13/13 (100%)
+exported\vehicles\lave\lave.v046_buscoach.ee
+exported\vehicles\lave\lave.v046_buscoach.eez
+gui\credits.blz
+gui\frontend.blz
+gui\main_menu_bm.blz
+gui\main_menu.blz
+gui\pda.blz
+text\ms15text.csv
+textures\gui\fe_bg_rico_alpha_dif.dds
+textures\gui\fe_block_edges_dif.dds
+textures\gui\str_mercenary_mode\str_compl_pol.dds
+textures\gui\str_mercenary_mode\str_compl_rus.dds
+textures\gui\str_mercenary_mode\str_m_m_pol.dds
