@@ -19,7 +19,7 @@ pub enum HashEntry {
 
 impl HashEntry {
     #[inline]
-    fn as_string(&self) -> Option<&String> {
+    pub fn as_string(&self) -> Option<&String> {
         match self {
             HashEntry::String(str) => Some(str),
             HashEntry::Path(_) => None,
@@ -27,11 +27,41 @@ impl HashEntry {
     }
 
     #[inline]
-    fn as_path(&self) -> Option<&Path> {
+    pub fn as_path(&self) -> Option<&Path> {
         match self {
             HashEntry::Path(path) => Some(path),
             HashEntry::String(_) => None,
         }
+    }
+
+    #[inline]
+    pub fn into_string(self) -> Option<String> {
+        match self {
+            HashEntry::String(str) => Some(str),
+            HashEntry::Path(_) => None,
+        }
+    }
+
+    #[inline]
+    pub fn into_path(self) -> Option<PathBuf> {
+        match self {
+            HashEntry::Path(path) => Some(path),
+            HashEntry::String(_) => None,
+        }
+    }
+}
+
+impl From<HashEntry> for Option<String> {
+    #[inline]
+    fn from(value: HashEntry) -> Self {
+        value.into_string()
+    }
+}
+
+impl From<HashEntry> for Option<PathBuf> {
+    #[inline]
+    fn from(value: HashEntry) -> Self {
+        value.into_path()
     }
 }
 
@@ -133,8 +163,8 @@ impl HashList {
     }
 
     #[inline]
-    pub fn remove(&mut self, hash: HashString) {
-        self.0.remove(&hash);
+    pub fn remove(&mut self, hash: HashString) -> Option<HashEntry> {
+        self.0.remove(&hash)
     }
 
     #[inline]
