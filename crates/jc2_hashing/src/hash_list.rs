@@ -88,7 +88,7 @@ impl HashList {
     }
 
     #[inline]
-    pub fn insert(&mut self, entry: HashEntry) {
+    pub fn insert(&mut self, entry: HashEntry) -> Option<HashEntry> {
         match entry {
             HashEntry::Path(path) => self.insert_path(path),
             HashEntry::String(string) => self.insert_string(string),
@@ -96,16 +96,18 @@ impl HashList {
     }
 
     #[inline]
-    pub fn insert_string(&mut self, string: impl Into<String>) {
+    pub fn insert_string(&mut self, string: impl Into<String>) -> Option<HashEntry> {
         let string: String = string.into();
-        self.0.insert(HashString::from_str(&string), string.into());
+        self.0.insert(HashString::from_str(&string), string.into())
     }
 
     #[inline]
-    pub fn insert_path(&mut self, path: impl Into<PathBuf>) {
+    pub fn insert_path(&mut self, path: impl Into<PathBuf>) -> Option<HashEntry> {
         let path: PathBuf = path.into();
         if let Some(hash) = HashString::from_path(&path) {
-            self.0.insert(hash, path.into());
+            self.0.insert(hash, path.into())
+        } else {
+            None
         }
     }
 
