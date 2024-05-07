@@ -47,6 +47,14 @@ impl From<PathBuf> for HashEntry {
 pub struct HashList(HashMap<HashString, HashEntry>);
 
 impl HashList {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self(HashMap::with_capacity(capacity))
+    }
+
     #[inline]
     pub fn insert(&mut self, entry: HashEntry) {
         match entry {
