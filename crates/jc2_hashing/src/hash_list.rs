@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use crate::HashString;
 
@@ -18,7 +21,7 @@ impl HashEntry {
     }
 
     #[inline]
-    fn as_path(&self) -> Option<&PathBuf> {
+    fn as_path(&self) -> Option<&Path> {
         match self {
             HashEntry::Path(path) => Some(path),
             HashEntry::String(_) => None,
@@ -82,7 +85,7 @@ impl HashList {
     }
 
     #[inline]
-    pub fn find_path(&self, hash: HashString) -> Option<&PathBuf> {
+    pub fn find_path(&self, hash: HashString) -> Option<&Path> {
         self.0.get(&hash).and_then(|v| v.as_path())
     }
 
