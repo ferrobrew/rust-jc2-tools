@@ -2,6 +2,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use crate::HashString;
 
+#[derive(Debug, Clone)]
 pub enum HashEntry {
     String(String),
     Path(PathBuf),
@@ -39,6 +40,7 @@ impl From<PathBuf> for HashEntry {
     }
 }
 
+#[derive(Default, Debug, Clone)]
 pub struct HashList(HashMap<HashString, HashEntry>);
 
 impl HashList {
