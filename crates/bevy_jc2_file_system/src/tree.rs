@@ -81,7 +81,11 @@ impl FileSystemTree {
 
 #[inline(always)]
 fn node_sort(a: &FileSystemTreeNode, b: &FileSystemTreeNode) -> std::cmp::Ordering {
-    lexical_sort::natural_lexical_cmp(&a.name, &b.name)
+    if a.tree.0.is_empty() == b.tree.0.is_empty() {
+        lexical_sort::natural_lexical_cmp(&a.name, &b.name)
+    } else {
+        a.tree.0.is_empty().cmp(&b.tree.0.is_empty())
+    }
 }
 
 impl<'a> IntoIterator for &'a FileSystemTree {

@@ -61,11 +61,17 @@ impl FileSystemAssetReader {
                 }
             }
             ArchiveType::Unknown => {
-                while self.mounts.pending_archives.load(Ordering::Relaxed) > 0 {
-                    yield_now().await;
-                }
-                while self.mounts.pending_stream_archives.load(Ordering::Relaxed) > 0 {
-                    yield_now().await;
+                // Select file types can bypass gates, yes, really
+                let bypass = path
+                    .extension()
+                    .is_some_and(|e| e.eq_ignore_ascii_case("filelist"));
+                if !bypass {
+                    while self.mounts.pending_archives.load(Ordering::Relaxed) > 0 {
+                        yield_now().await;
+                    }
+                    while self.mounts.pending_stream_archives.load(Ordering::Relaxed) > 0 {
+                        yield_now().await;
+                    }
                 }
             }
             ArchiveType::File => {}

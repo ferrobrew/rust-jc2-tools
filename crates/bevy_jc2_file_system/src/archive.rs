@@ -3,6 +3,8 @@ use bevy::{
     prelude::*,
 };
 use jc2_file_formats::archive::{ArchiveTable, ArchiveTableEntry, StreamArchive};
+#[cfg(feature = "tree")]
+use jc2_hashing::HashList;
 use jc2_hashing::HashString;
 use std::{
     collections::HashMap,
@@ -10,6 +12,9 @@ use std::{
     path::{Path, PathBuf},
 };
 use thiserror::Error;
+
+#[cfg(feature = "tree")]
+use crate::file_list::FileList;
 
 #[derive(Error, Debug)]
 pub(crate) enum ArchiveError {
@@ -27,11 +32,20 @@ pub(crate) enum ArchiveEntry {
     Preloaded(Vec<u8>),
 }
 
+#[cfg(feature = "tree")]
+#[derive(Debug, Clone)]
+pub(crate) enum ArchivePaths {
+    FileList(Handle<FileList>),
+    HashList(HashList),
+}
+
 #[derive(Asset, Debug, Clone, TypePath)]
 pub(crate) struct Archive {
     pub(crate) hash: HashString,
     pub(crate) source_path: PathBuf,
     pub(crate) target_path: Option<PathBuf>,
+    #[cfg(feature = "tree")]
+    pub(crate) paths: ArchivePaths,
     pub(crate) entries: HashMap<HashString, ArchiveEntry>,
 }
 
@@ -54,13 +68,24 @@ impl AssetLoader for ArchiveLoader {
             reader.read_to_end(&mut bytes).await?;
             let mut cursor = binrw::io::Cursor::new(&bytes);
 
+            let source_path = load_context.path().to_path_buf();
+            let hash = HashString::from_str(&source_path.to_string_lossy());
+
             match archive_type(load_context.path()) {
                 ArchiveType::Stream => {
                     let archive = StreamArchive::read(&mut cursor)?;
                     Ok(Archive {
-                        hash: HashString::from_str(&load_context.path().to_string_lossy()),
-                        source_path: load_context.path().into(),
+                        hash,
+                        source_path,
                         target_path: None,
+                        #[cfg(feature = "tree")]
+                        paths: ArchivePaths::HashList({
+                            let mut paths = HashList::with_capacity(archive.entries.len());
+                            for path in archive.entries.keys() {
+                                paths.insert_path(path);
+                            }
+                            paths
+                        }),
                         entries: archive
                             .entries
                             .into_iter()
@@ -71,9 +96,13 @@ impl AssetLoader for ArchiveLoader {
                 ArchiveType::File => {
                     let archive = ArchiveTable::read(&mut cursor)?;
                     Ok(Archive {
-                        hash: HashString::from_str(&load_context.path().to_string_lossy()),
-                        source_path: load_context.path().into(),
-                        target_path: Some(load_context.path().with_extension("arc")),
+                        hash,
+                        source_path: source_path.clone(),
+                        target_path: Some(source_path.with_extension("arc")),
+                        #[cfg(feature = "tree")]
+                        paths: ArchivePaths::FileList(
+                            load_context.load(source_path.with_extension("filelist")),
+                        ),
                         entries: archive
                             .entries
                             .into_iter()
@@ -81,9 +110,7 @@ impl AssetLoader for ArchiveLoader {
                             .collect(),
                     })
                 }
-                ArchiveType::Unknown => Err(ArchiveError::UnknownFormat {
-                    path: load_context.path().into(),
-                }),
+                ArchiveType::Unknown => Err(ArchiveError::UnknownFormat { path: source_path }),
             }
         })
     }

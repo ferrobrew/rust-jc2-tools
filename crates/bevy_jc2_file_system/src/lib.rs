@@ -17,13 +17,22 @@ use std::{
 };
 
 mod archive;
+#[cfg(feature = "tree")]
+use archive::ArchivePaths;
 use archive::{archive_type, Archive, ArchiveLoader, ArchiveType};
 
 mod asset_reader;
 use asset_reader::FileSystemAssetReader;
 
+#[cfg(feature = "tree")]
 mod tree;
+#[cfg(feature = "tree")]
 pub use tree::{FileSystemTree, FileSystemTreeIter, FileSystemTreeIterValue};
+
+#[cfg(feature = "tree")]
+mod file_list;
+#[cfg(feature = "tree")]
+use file_list::{FileList, FileListLoader};
 
 #[derive(Default, Debug)]
 pub struct FileSystemPlugin;
@@ -51,6 +60,8 @@ pub struct FileSystemMounts {
     pub(crate) mounts: Arc<FileSystemMountsData>,
     pub(crate) pending_archives: HashMap<HashString, Handle<Archive>>,
     pub(crate) pending_events: Vec<FileSystemEvent>,
+    #[cfg(feature = "tree")]
+    pub file_tree: FileSystemTree,
 }
 
 impl FileSystemMounts {
@@ -151,7 +162,26 @@ impl FileSystemMounts {
         {
             let mut archives = self.mounts.archives.write_blocking();
             let archive_count = archives.len();
-            archives.retain(|archive| archive.hash != hash);
+            archives.retain_mut(|archive| {
+                let retain = archive.hash != hash;
+                #[cfg(feature = "tree")]
+                if !retain {
+                    match &mut archive.paths {
+                        ArchivePaths::FileList(_) => {
+                            self.file_tree.remove(&path);
+                        }
+                        ArchivePaths::HashList(paths) => {
+                            for file in std::mem::take(paths)
+                                .into_values()
+                                .filter_map(|e| e.into_path())
+                            {
+                                self.file_tree.remove(&path.join(&file));
+                            }
+                        }
+                    }
+                }
+                retain
+            });
             if archives.len() < archive_count {
                 self.pending_events
                     .push(FileSystemEvent::ArchiveUnmounted { path: path.clone() });
@@ -189,8 +219,9 @@ impl Plugin for FileSystemPlugin {
         app.insert_resource(AssetMetaCheck::Never)
             .insert_resource(FileSystemMounts {
                 mounts: mounts.clone(),
-                pending_archives: HashMap::new(),
-                pending_events: Vec::new(),
+                #[cfg(feature = "tree")]
+                file_tree: FileSystemTree::with_capacity(256),
+                ..default()
             })
             .register_asset_source(
                 AssetSourceId::Default,
@@ -208,14 +239,22 @@ impl Plugin for FileSystemPlugin {
     fn finish(&self, app: &mut App) {
         app.init_asset::<Archive>()
             .register_asset_loader(ArchiveLoader);
+
+        #[cfg(feature = "tree")]
+        {
+            app.init_asset::<FileList>()
+                .register_asset_loader(FileListLoader);
+        }
     }
 }
 
 fn process_archive_events(
+    #[cfg(feature = "tree")] file_lists: Res<Assets<FileList>>,
+    #[cfg(feature = "tree")] mut failed_file_lists: EventReader<AssetLoadFailedEvent<FileList>>,
     mut archives: ResMut<Assets<Archive>>,
-    mut load_events: EventReader<AssetEvent<Archive>>,
-    mut failed_events: EventReader<AssetLoadFailedEvent<Archive>>,
     mut event_writer: EventWriter<FileSystemEvent>,
+    mut failed_archives: EventReader<AssetLoadFailedEvent<Archive>>,
+    mut load_events: EventReader<AssetEvent<Archive>>,
     mut mounts: ResMut<FileSystemMounts>,
 ) {
     // Process pending events
@@ -225,10 +264,20 @@ fn process_archive_events(
 
     let mut processed_stream_archives = 0usize;
     let mut processed_archives = 0usize;
-    let mut processed = |path: &Path| match archive_type(path) {
-        ArchiveType::Stream => processed_stream_archives += 1,
-        ArchiveType::File => processed_archives += 1,
-        ArchiveType::Unknown => {}
+    let mut process = |mounts: &mut FileSystemMounts, path: &Path, error: bool| {
+        match archive_type(path) {
+            ArchiveType::Stream => processed_stream_archives += 1,
+            ArchiveType::File => processed_archives += 1,
+            ArchiveType::Unknown => {}
+        };
+        event_writer.send(if error {
+            FileSystemEvent::ArchiveError { path: path.into() }
+        } else {
+            FileSystemEvent::ArchiveMounted { path: path.into() }
+        });
+        mounts
+            .pending_archives
+            .remove(&HashString::from_str(&path.to_string_lossy()));
     };
 
     // Process loaded archives
@@ -244,9 +293,7 @@ fn process_archive_events(
 
         // Validate that the archive load wasn't cancelled
         if !mounts.pending_archives.contains_key(&hash) {
-            let path = archive.source_path.clone();
-            event_writer.send(FileSystemEvent::ArchiveError { path: path.clone() });
-            processed(&archive.source_path);
+            process(mounts.as_mut(), &archive.source_path, true);
             continue;
         };
 
@@ -259,30 +306,55 @@ fn process_archive_events(
                 .iter()
                 .any(|directory| directory.join(target_path).is_file());
             if !exists {
-                let path = archive.source_path.clone();
-                event_writer.send(FileSystemEvent::ArchiveError { path: path.clone() });
-                mounts.pending_archives.remove(&hash);
-                processed(&path);
+                process(mounts.as_mut(), &archive.source_path, true);
                 continue;
             }
         };
 
         // Finally mount the archive, and emit mounted event
         let path = archive.source_path.clone();
-        event_writer.send(FileSystemEvent::ArchiveMounted { path: path.clone() });
+
+        #[cfg(feature = "tree")]
+        {
+            let Some(paths) = (match &archive.paths {
+                ArchivePaths::FileList(handle) => file_lists.get(handle).map(|list| &list.paths),
+                ArchivePaths::HashList(paths) => Some(paths),
+            }) else {
+                process(mounts.as_mut(), &archive.source_path, true);
+                continue;
+            };
+
+            for hash in archive.entries.keys() {
+                mounts.file_tree.insert(&match paths.find_path(*hash) {
+                    Some(path) => archive.source_path.join(path),
+                    None => archive
+                        .source_path
+                        .join(&PathBuf::from(hash.hash().to_string())),
+                });
+            }
+            mounts.file_tree.sort();
+        }
+
         mounts.mounts.archives.write_blocking().push(archive);
-        mounts.pending_archives.remove(&hash);
-        processed(&path);
+        process(mounts.as_mut(), &path, false);
+    }
+
+    // Process failed file lists
+    #[cfg(feature = "tree")]
+    for file_list_handle in failed_file_lists.read().map(|event| event.id) {
+        for (_, archive) in archives.iter() {
+            match &archive.paths {
+                ArchivePaths::FileList(file_list) if file_list.id() == file_list_handle => {
+                    process(mounts.as_mut(), &archive.source_path, true);
+                }
+                _ => {}
+            }
+        }
     }
 
     // Process failed archives
-    for path in failed_events.read().map(|event| &event.path) {
-        event_writer.send(FileSystemEvent::ArchiveError {
-            path: path.path().into(),
-        });
-        let hash = HashString::from_str(&path.to_string());
-        mounts.pending_archives.remove(&hash);
-        processed(path.path());
+    for path in failed_archives.read().map(|event| &event.path) {
+        process(mounts.as_mut(), path.path(), true);
     }
 
     // Handle processed archives
