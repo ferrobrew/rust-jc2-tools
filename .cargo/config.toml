@@ -2,4 +2,4 @@
 BEVY_ASSET_ROOT = { value = ".", relative = true }
 
 [alias]
-launch = "run --bin=jc2_tools"
+launch = "run --features=dev --bin=jc2_tools"

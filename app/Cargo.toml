@@ -10,6 +10,13 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[features]
+dev = [
+    "bevy/dynamic_linking",
+    "bevy/embedded_watcher",
+    "bevy/file_watcher",
+]
+
 [lints]
 workspace = true
 
@@ -31,10 +38,6 @@ bevy = { workspace = true, features = [
     "webgpu",
     "x11",
     "dds",
-    # development features
-    "dynamic_linking",
-    "embedded_watcher",
-    "file_watcher",
 ] }
 bevy_egui.workspace = true
 bevy_file_dialog.workspace = true
