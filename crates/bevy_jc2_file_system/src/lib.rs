@@ -181,6 +181,7 @@ impl FileSystemMounts {
                             }
                         }
                     }
+                    self.file_tree.sort();
                 }
                 retain
             });
