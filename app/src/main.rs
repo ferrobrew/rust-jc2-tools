@@ -8,9 +8,9 @@ use bevy::{
     prelude::*,
     winit::WinitWindows,
 };
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiSet};
 use bevy_file_dialog::{DialogFilePicked, FileDialogExt, FileDialogPlugin};
-use bevy_jc2_file_system::{FileSystemMounts, FileSystemPlugin};
+use bevy_jc2_file_system::{FileSystemMounts, FileSystemPlugin, FileSystemTreeIterValue};
 use bevy_jc2_render_block::{RenderBlockBundle, RenderBlockMesh, RenderBlockPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use debug::wireframe::{WireframeNormalsConfig, WireframeNormalsPlugin};
@@ -65,7 +65,12 @@ fn main() {
             ..default()
         })
         .add_systems(Startup, startup_system)
-        .add_systems(Update, user_interface_system)
+        .add_systems(
+            PreUpdate,
+            (draw_title_bar, draw_file_tree)
+                .chain()
+                .after(EguiSet::BeginFrame),
+        )
         .add_systems(PostUpdate, open_render_block)
         .run();
 }
@@ -154,7 +159,7 @@ fn open_render_block(
     }
 }
 
-fn user_interface_system(
+fn draw_title_bar(
     mut commands: Commands,
     mut contexts: EguiContexts,
     mut normals: ResMut<WireframeNormalsConfig>,
@@ -164,7 +169,7 @@ fn user_interface_system(
 ) {
     egui::TopBottomPanel::top("title_bar").show(contexts.ctx_mut(), |ui| {
         ui.visuals_mut().button_frame = false;
-        ui.horizontal_wrapped(|ui| {
+        ui.horizontal(|ui| {
             ui.menu_button("File", |ui| {
                 if ui.button("Open").clicked() {
                     commands
@@ -216,4 +221,29 @@ fn user_interface_system(
             });
         });
     });
+}
+
+fn draw_file_tree(mounts: Res<FileSystemMounts>, mut contexts: EguiContexts) {
+    fn draw<'a>(ui: &mut egui::Ui, tree: impl IntoIterator<Item = FileSystemTreeIterValue<'a>>) {
+        for entry in tree {
+            ui.horizontal(|ui| {
+                if !entry.is_empty() {
+                    egui::CollapsingHeader::new(entry.name()).show(ui, |ui| {
+                        draw(ui, &entry);
+                    });
+                } else {
+                    ui.label(entry.name());
+                }
+            });
+        }
+    }
+
+    egui::SidePanel::left("side_bar")
+        .default_width(200.0)
+        .max_width(500.0)
+        .show(contexts.ctx_mut(), |ui| {
+            egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
+                draw(ui, &mounts.file_tree);
+            });
+        });
 }

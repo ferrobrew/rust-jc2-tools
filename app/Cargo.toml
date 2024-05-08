@@ -14,7 +14,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-bevy_jc2_file_system.workspace = true
+bevy_jc2_file_system = { workspace = true, features = ["tree"] }
 bevy_jc2_render_block.workspace = true
 
 bevy = { workspace = true, features = [
