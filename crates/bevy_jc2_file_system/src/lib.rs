@@ -162,9 +162,11 @@ impl FileSystemMounts {
         {
             let mut archives = self.mounts.archives.write_blocking();
             let archive_count = archives.len();
+            #[cfg(not(feature = "tree"))]
+            archives.retain(|archive| archive.hash != hash);
+            #[cfg(feature = "tree")]
             archives.retain_mut(|archive| {
                 let retain = archive.hash != hash;
-                #[cfg(feature = "tree")]
                 if !retain {
                     match &mut archive.paths {
                         ArchivePaths::FileList(_) => {
