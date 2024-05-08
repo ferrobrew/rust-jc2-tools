@@ -18,8 +18,8 @@ pub fn draw_file_tree(
     mut contexts: EguiContexts,
     mut event_writer: EventWriter<FileTreeEvent>,
 ) {
-    egui::SidePanel::left("side_bar")
-        .default_width(200.0)
+    egui::SidePanel::left("file_tree")
+        .default_width(300.0)
         .max_width(500.0)
         .show(contexts.ctx_mut(), |ui| {
             egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
