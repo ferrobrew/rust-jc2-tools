@@ -5,7 +5,7 @@ use bevy_egui::EguiSet;
 use bevy_file_dialog::FileDialogPlugin;
 use bevy_jc2_render_block::{RenderBlockBundle, RenderBlockMesh};
 
-use crate::utilities::content::ContentDirectory;
+use crate::utilities::content::{ContentDirectory, ContentState};
 
 use self::{
     file_tree::{draw_file_tree, process_file_tree, FileTreeEvent},
@@ -31,7 +31,11 @@ impl Plugin for InterfacePlugin {
         .init_resource::<TargetModel>()
         .add_systems(
             PreUpdate,
-            (draw_title_bar, draw_file_tree, process_file_tree)
+            (
+                draw_title_bar,
+                draw_file_tree.run_if(in_state(ContentState::Loaded)),
+                process_file_tree,
+            )
                 .chain()
                 .after(EguiSet::BeginFrame),
         )
