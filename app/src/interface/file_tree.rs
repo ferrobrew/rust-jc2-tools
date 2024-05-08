@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use std::{ops::BitXorAssign, path::PathBuf};
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::label::DynHash};
 use bevy_egui::{egui, EguiContexts};
 use bevy_jc2_file_system::{FileSystemMounts, FileSystemTreeIterValue};
 
@@ -42,7 +42,11 @@ pub fn draw_file_tree(
                         })
                         .header_response
                 } else {
-                    ui.label(entry.name())
+                    ui.add(
+                        egui::Label::new(entry.name())
+                            .selectable(false)
+                            .sense(egui::Sense::click()),
+                    )
                 };
                 let context_menu = |menu: &mut dyn FnMut(&mut egui::Ui)| {
                     response
