@@ -114,11 +114,26 @@ pub struct StreamArchive {
 
 impl StreamArchive {
     pub fn read<R: Read + Seek>(reader: &mut R) -> Result<Self, binrw::Error> {
-        #[cfg(target_endian = "little")]
-        return Self::read_le(reader);
+        let compressed = u8::read_options(reader, binrw::Endian::Little, ())? == 0x78;
+        reader.seek(std::io::SeekFrom::Start(0))?;
 
-        #[cfg(target_endian = "big")]
-        return Self::read_be(reader);
+        if compressed {
+            let mut buffer = Vec::new();
+            flate2::read::ZlibDecoder::new(reader).read_to_end(&mut buffer)?;
+            let mut reader = std::io::Cursor::new(buffer);
+
+            #[cfg(target_endian = "little")]
+            return Self::read_le(&mut reader);
+
+            #[cfg(target_endian = "big")]
+            return Self::read_be(&mut reader);
+        } else {
+            #[cfg(target_endian = "little")]
+            return Self::read_le(reader);
+
+            #[cfg(target_endian = "big")]
+            return Self::read_be(reader);
+        };
     }
 
     pub fn write<W: Write + Seek>(&self, writer: &mut W) -> Result<(), binrw::Error> {

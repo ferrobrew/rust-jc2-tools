@@ -34,6 +34,7 @@ bitflags = { version = "2.4", features = ["bytemuck"] }
 bytemuck = { version = "1.14", features = ["must_cast"] }
 clap = { version = "4.4", features = ["derive"] }
 const_for = "0.1"
+flate2 = "1.0"
 futures-io = "0.3"
 futures-lite = "2.0"
 gltf = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }

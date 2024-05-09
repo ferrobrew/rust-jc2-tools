@@ -2635,6 +2635,7 @@ dependencies = [
  "binrw",
  "bitflags 2.5.0",
  "bytemuck",
+ "flate2",
  "jc2_hashing",
  "num-traits",
  "thiserror",
