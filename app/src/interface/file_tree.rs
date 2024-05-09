@@ -1,6 +1,6 @@
-use std::{ops::BitXorAssign, path::PathBuf};
+use std::path::PathBuf;
 
-use bevy::{prelude::*, utils::label::DynHash};
+use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use bevy_jc2_file_system::{FileSystemMounts, FileSystemTreeIterValue};
 
