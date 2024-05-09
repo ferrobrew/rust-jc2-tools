@@ -125,7 +125,7 @@ pub(crate) enum ArchiveType {
 pub(crate) fn archive_type(path: &Path) -> ArchiveType {
     match path.extension().and_then(OsStr::to_str) {
         Some("tab") => ArchiveType::File,
-        Some("ee") => ArchiveType::Stream,
+        Some("bl" | "blz" | "ee" | "eez" | "fl" | "flz" | "nl" | "nlz") => ArchiveType::Stream,
         _ => ArchiveType::Unknown,
     }
 }

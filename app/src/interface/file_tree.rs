@@ -60,7 +60,7 @@ pub fn draw_file_tree(
                 };
 
                 match extension {
-                    "ee" | "eez" | "nlz" | "flz" => {
+                    "bl" | "blz" | "ee" | "eez" | "fl" | "flz" | "nl" | "nlz" => {
                         context_menu(&mut |ui| {
                             let mounted = mounts.has_mounted_archive(path);
                             let label = if mounted { "unmount" } else { "mount" };
