@@ -1,8 +1,5 @@
 use bevy::{
-    pbr::{
-        wireframe::{WireframeConfig, WireframePlugin},
-        CascadeShadowConfigBuilder,
-    },
+    pbr::{wireframe::WireframePlugin, CascadeShadowConfigBuilder},
     prelude::*,
 };
 use bevy_egui::EguiPlugin;
@@ -12,7 +9,10 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use debug::wireframe::WireframeNormalsPlugin;
 use interface::InterfacePlugin;
-use utilities::{content::ContentPlugin, streaming::StreamingPlugin};
+use utilities::{
+    content::ContentPlugin, model::ModelPlugin, settings::SettingsPlugin,
+    streaming::StreamingPlugin,
+};
 
 mod debug;
 mod interface;
@@ -31,18 +31,16 @@ fn main() {
                 ..default()
             }),
             ContentPlugin,
-            StreamingPlugin,
-            InterfacePlugin,
-            RenderBlockPlugin,
             EguiPlugin,
+            InterfacePlugin,
+            ModelPlugin,
             PanOrbitCameraPlugin,
-            WireframePlugin,
+            RenderBlockPlugin,
+            SettingsPlugin,
+            StreamingPlugin,
             WireframeNormalsPlugin,
+            WireframePlugin,
         ))
-        .insert_resource(WireframeConfig {
-            default_color: Color::WHITE,
-            ..default()
-        })
         .add_systems(Startup, startup_system)
         .run();
 }

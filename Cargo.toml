@@ -29,6 +29,7 @@ bevy = { version = "0.13", default-features = false }
 bevy_egui = "0.27"
 bevy_file_dialog = "0.5.0"
 bevy_panorbit_camera = { version = "0.18", features = ["bevy_egui"] }
+bevy_save = { version = "0.14", default-features = false }
 binrw = "0.13"
 bitflags = { version = "2.4", features = ["bytemuck"] }
 bytemuck = { version = "1.14", features = ["must_cast"] }

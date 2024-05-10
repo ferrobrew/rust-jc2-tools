@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use bevy_jc2_file_system::{FileSystemMounts, FileSystemTreeIterValue};
 
-use super::TargetModel;
+use crate::utilities::model::{TargetArchive, TargetDirectory, TargetModel};
 
 #[derive(Event, Debug)]
 pub enum FileTreeEvent {
@@ -94,6 +94,8 @@ pub fn draw_file_tree(
 
 pub fn process_file_tree(
     asset_server: Res<AssetServer>,
+    mut archive: ResMut<TargetArchive>,
+    mut directory: ResMut<TargetDirectory>,
     mut events: EventReader<FileTreeEvent>,
     mut model: ResMut<TargetModel>,
     mut mounts: ResMut<FileSystemMounts>,
@@ -107,7 +109,12 @@ pub fn process_file_tree(
                 mounts.unmount_archive(path);
             }
             FileTreeEvent::LoadModel { path } => {
-                model.path = Some(path.clone());
+                let Some(archive_path) = path.parent() else {
+                    continue;
+                };
+                directory.current = None;
+                archive.current = Some(archive_path.to_string_lossy().to_string());
+                model.path = Some(path.to_string_lossy().to_string());
             }
         }
     }

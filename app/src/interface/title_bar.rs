@@ -1,12 +1,9 @@
 use bevy::{pbr::wireframe::WireframeConfig, prelude::*, winit::WinitWindows};
 use bevy_egui::{egui, EguiContexts};
-use bevy_file_dialog::{DialogFilePicked, FileDialogExt};
-use bevy_jc2_file_system::FileSystemMounts;
+use bevy_file_dialog::FileDialogExt;
 use bevy_jc2_render_block::RenderBlockMesh;
 
 use crate::{debug::wireframe::WireframeNormalsConfig, utilities::content::ContentDirectory};
-
-use super::{TargetDirectory, TargetModel};
 
 pub fn draw_title_bar(
     mut commands: Commands,
@@ -70,30 +67,4 @@ pub fn draw_title_bar(
             });
         });
     });
-}
-
-pub fn open_model(
-    mut directory: ResMut<TargetDirectory>,
-    mut events: EventReader<DialogFilePicked<RenderBlockMesh>>,
-    mut model: ResMut<TargetModel>,
-    mut mounts: ResMut<FileSystemMounts>,
-) {
-    for path in events.read().map(|e| e.path.clone()) {
-        let Some(parent) = path.parent() else {
-            continue;
-        };
-        let Ok(file) = path.strip_prefix(parent) else {
-            continue;
-        };
-
-        // Remount file directory
-        if let Some(mounted_directory) = &directory.value {
-            mounts.unmount_directory(mounted_directory.clone());
-        }
-        mounts.mount_directory(parent);
-        directory.value = Some(parent.into());
-
-        // Load model
-        model.path = Some(file.into());
-    }
 }
