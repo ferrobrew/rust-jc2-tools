@@ -90,7 +90,10 @@ fn mount_content_directory(
         }
 
         // We should always mount general
-        mounts.mount_archive(&asset_server, "general.blz");
+        mounts.mount_archive(
+            &asset_server,
+            "archives_win32\\pc0.tab\\global\\areasets\\general.blz",
+        );
 
         directory.previous = Some(target.clone());
     }
