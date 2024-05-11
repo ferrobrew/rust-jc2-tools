@@ -37,7 +37,10 @@ fn update_streaming_state(
         match event {
             FileSystemEvent::ArchivePending { path } => data.pending.push(path.clone()),
             FileSystemEvent::ArchiveUnmounted { path } => data.ready.retain(|f| f != path),
-            FileSystemEvent::ArchiveMounted { path } => data.ready.retain(|f| f != path),
+            FileSystemEvent::ArchiveMounted { path } => {
+                data.pending.retain(|f| f != path);
+                data.ready.push(path.clone());
+            }
             FileSystemEvent::ArchiveError { path } => data.pending.retain(|f| f != path),
             _ => {}
         }
