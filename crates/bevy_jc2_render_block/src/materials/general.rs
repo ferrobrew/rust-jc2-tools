@@ -187,7 +187,7 @@ impl Material for RenderBlockGeneralMaterial {
         if let Some(fragment) = descriptor.fragment.as_mut() {
             let shader_defs = &mut fragment.shader_defs;
 
-            if key.bind_group_data.use_snow {
+            if key.bind_group_data.use_channel_textures {
                 shader_defs.push("USE_CHANNEL_TEXTURES".into());
             }
 
