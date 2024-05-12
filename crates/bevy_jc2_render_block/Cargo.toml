@@ -24,5 +24,6 @@ bevy = { workspace = true, features = [
   "bevy_render",
   "bevy_asset",
 ] }
+bevy-inspector-egui.workspace = true
 binrw.workspace = true
 thiserror.workspace = true

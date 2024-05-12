@@ -43,6 +43,7 @@ bevy_egui.workspace = true
 bevy_file_dialog.workspace = true
 bevy_panorbit_camera.workspace = true
 bevy_save.workspace = true
+bevy-inspector-egui.workspace = true
 binrw.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
