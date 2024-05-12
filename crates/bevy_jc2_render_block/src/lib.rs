@@ -32,13 +32,13 @@ pub enum RenderBlockModelError {
     Io(#[from] std::io::Error),
 }
 
-#[derive(Asset, Debug, Clone, TypePath)]
+#[derive(Asset, Debug, Clone, Reflect)]
 pub struct RenderBlockPrimitive {
     pub mesh: Handle<Mesh>,
     pub material: RenderBlockMaterial,
 }
 
-#[derive(Asset, Debug, Clone, TypePath)]
+#[derive(Asset, Debug, Clone, Reflect)]
 pub struct RenderBlockMesh {
     pub primitives: Vec<RenderBlockPrimitive>,
 }
@@ -203,17 +203,24 @@ impl Plugin for RenderBlockPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "assets/shaders/general_material.wgsl");
 
-        app.init_asset::<RenderBlockPrimitive>()
+        app.register_type::<RenderBlockMesh>()
+            .register_type::<Handle<RenderBlockMesh>>()
             .init_asset::<RenderBlockMesh>()
+            .register_type::<RenderBlockPrimitive>()
+            .init_asset::<RenderBlockPrimitive>()
+            .register_type::<RenderBlockMaterial>()
+            .register_type::<RenderBlockGeneralMaterial>()
+            .register_type::<Handle<RenderBlockGeneralMaterial>>()
             .add_plugins(MaterialPlugin::<RenderBlockGeneralMaterial>::default())
             .add_systems(
                 PreUpdate,
                 (
                     load_mesh,
-                    reload_mesh.after(load_mesh),
-                    general_material_changed.after(reload_mesh),
-                    general_material_transform_changed.after(general_material_changed),
-                ),
+                    reload_mesh,
+                    general_material_changed,
+                    general_material_transform_changed,
+                )
+                    .chain(),
             )
             .preregister_asset_loader::<RenderBlockLoader>(&["rbm"]);
     }

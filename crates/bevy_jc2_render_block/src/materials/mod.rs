@@ -4,7 +4,7 @@ use self::general::RenderBlockGeneralMaterial;
 
 pub mod general;
 
-#[derive(Debug, Clone, TypePath)]
+#[derive(Debug, Clone, Reflect)]
 pub enum RenderBlockMaterial {
     General(Handle<RenderBlockGeneralMaterial>),
 }
