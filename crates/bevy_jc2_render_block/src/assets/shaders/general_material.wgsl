@@ -95,7 +95,30 @@ fn fragment(
     let reflection = properties.r;
     let specular_intensity = properties.g;
     let emissive = properties.b;
-    let double_sided = false;
+    let double_sided = true;
+
+    var N: vec3<f32> = input.world_normal;
+#ifdef VERTEX_TANGENTS
+#ifdef VERTEX_UVS
+#ifdef STANDARD_MATERIAL_NORMAL_MAP
+    var T: vec3<f32> = input.world_tangent.xyz;
+    var B: vec3<f32> = cross(N, T) * input.world_tangent.w;
+    var Nt: vec3<f32> = normalize(textureSampleBias(normal_texture, normal_sampler, input.uv0, view.mip_bias).rgb * 2.0 - 1.0);
+    if double_sided && !is_front {
+        Nt = -Nt;
+    }
+    N = Nt.x * T + Nt.y * B + Nt.z * N;
+#endif
+#endif
+#endif
+
+#ifdef USE_SNOW
+    let SnowFactor: f32 = 1.0;
+    let SnowColor: vec4<f32> = vec4(1.0, 1.0, 1.0, 1.0);
+    let snow_mask: f32 = dirt_color.r;
+    let snow_factor: f32 = saturate(5.0 * (N.y - (0.7 + (1 - snow_mask))) - SnowFactor);
+    diffuse_color = mix(diffuse_color, SnowColor, snow_factor);
+#endif
 
     var pbr_input: PbrInput = pbr_input_new();
     pbr_input.material.base_color = input.color * diffuse_color;
@@ -110,25 +133,6 @@ fn fragment(
         is_front,
     );
     pbr_input.is_orthographic = view.projection[3].w == 1.0;
-
-    var N: vec3<f32> = input.world_normal;
-
-#ifdef VERTEX_TANGENTS
-#ifdef VERTEX_UVS
-#ifdef STANDARD_MATERIAL_NORMAL_MAP
-    var T: vec3<f32> = input.world_tangent.xyz;
-    var B: vec3<f32> = cross(N, T) * input.world_tangent.w;
-    var Nt: vec3<f32> = normalize(textureSampleBias(normal_texture, normal_sampler, input.uv0, view.mip_bias).rgb * 2.0 - 1.0);
-
-    if double_sided && !is_front {
-        Nt = -Nt;
-    }
-
-    N = Nt.x * T + Nt.y * B + Nt.z * N;
-#endif
-#endif
-#endif
-
     pbr_input.N = N;
     pbr_input.V = calculate_view(input.world_position, pbr_input.is_orthographic);
 
