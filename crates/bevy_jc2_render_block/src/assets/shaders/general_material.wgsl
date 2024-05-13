@@ -84,6 +84,12 @@ fn fragment(
 #endif
     diffuse_color *= vec4<f32>(input.color.rgb, 1.0);
 
+#ifdef ALPHA_TEST
+    if diffuse_color.a < 0.5 {
+        discard;
+    }
+#endif
+
     let dirt_color = textureSample(dirt_color_texture, dirt_color_sampler, input.uv1);
     diffuse_color *= mix(
         vec4<f32>(1.0, 1.0, 1.0, 1.0),
@@ -120,12 +126,7 @@ fn fragment(
 #endif
 
     var pbr_input: PbrInput = pbr_input_new();
-    pbr_input.material.base_color = input.color * diffuse_color;
-#ifdef ALPHA_TEST
-    if pbr_input.material.base_color.a < 0.5 {
-        discard;
-    }
-#endif
+    pbr_input.material.base_color = diffuse_color;
     pbr_input.material.metallic = saturate(specular_intensity * material.specular_power * reflection);
     pbr_input.material.reflectance = saturate(reflection);
     pbr_input.material.emissive = vec4<f32>(emissive);
