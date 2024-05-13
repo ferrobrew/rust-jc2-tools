@@ -94,7 +94,7 @@ impl AssetLoader for RenderBlockLoader {
 
             let mut primitives = Vec::with_capacity(model.blocks.len());
 
-            for block in model.blocks.iter() {
+            for (idx, block) in model.blocks.iter().enumerate() {
                 match block {
                     rbm::RenderBlock::General(general) => {
                         let mut mesh = Mesh::new(
@@ -176,9 +176,9 @@ impl AssetLoader for RenderBlockLoader {
                             false,
                         ));
 
-                        let mesh = load_context.add_labeled_asset("Mesh".into(), mesh);
+                        let mesh = load_context.add_labeled_asset(format!("Mesh{idx:?}"), mesh);
                         let material = load_context
-                            .add_labeled_asset("Material".into(), material)
+                            .add_labeled_asset(format!("Material{idx:?}"), material)
                             .into();
 
                         primitives.push(RenderBlockPrimitive { mesh, material });
