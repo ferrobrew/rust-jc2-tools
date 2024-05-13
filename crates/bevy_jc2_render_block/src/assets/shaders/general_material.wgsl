@@ -95,20 +95,19 @@ fn fragment(
     let reflection = properties.r;
     let specular_intensity = properties.g;
     let emissive = properties.b;
-    let double_sided = true;
 
     var N: vec3<f32> = input.world_normal;
 #ifdef VERTEX_TANGENTS
 #ifdef VERTEX_UVS
-#ifdef STANDARD_MATERIAL_NORMAL_MAP
     var T: vec3<f32> = input.world_tangent.xyz;
     var B: vec3<f32> = cross(N, T) * input.world_tangent.w;
     var Nt: vec3<f32> = normalize(textureSampleBias(normal_texture, normal_sampler, input.uv0, view.mip_bias).rgb * 2.0 - 1.0);
-    if double_sided && !is_front {
+#ifdef DOUBLE_SIDED
+    if !is_front {
         Nt = -Nt;
     }
-    N = Nt.x * T + Nt.y * B + Nt.z * N;
 #endif
+    N = Nt.x * T + Nt.y * B + Nt.z * N;
 #endif
 #endif
 
@@ -122,6 +121,11 @@ fn fragment(
 
     var pbr_input: PbrInput = pbr_input_new();
     pbr_input.material.base_color = input.color * diffuse_color;
+#ifdef ALPHA_TEST
+    if pbr_input.material.base_color.a < 0.5 {
+        discard;
+    }
+#endif
     pbr_input.material.metallic = saturate(specular_intensity * material.specular_power * reflection);
     pbr_input.material.reflectance = saturate(reflection);
     pbr_input.material.emissive = vec4<f32>(emissive);
@@ -129,7 +133,11 @@ fn fragment(
     pbr_input.world_position = input.world_position;
     pbr_input.world_normal = prepare_world_normal(
         input.world_normal,
-        double_sided,
+#ifdef DOUBLE_SIDED
+        true,
+#else
+        false,
+#endif
         is_front,
     );
     pbr_input.is_orthographic = view.projection[3].w == 1.0;

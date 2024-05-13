@@ -16,6 +16,7 @@ pub struct RenderBlockGeneralMaterialKey {
     depth_bias: Option<i32>,
     use_channel_textures: bool,
     use_snow: bool,
+    alpha_test: bool,
 }
 
 impl From<&RenderBlockGeneralMaterial> for RenderBlockGeneralMaterialKey {
@@ -26,6 +27,7 @@ impl From<&RenderBlockGeneralMaterial> for RenderBlockGeneralMaterialKey {
             depth_bias: material.depth_test.then_some(material.depth_bias as i32),
             use_channel_textures: material.use_channel_textures,
             use_snow: material.use_snow,
+            alpha_test: material.alpha_test,
         }
     }
 }
@@ -151,7 +153,7 @@ impl Material for RenderBlockGeneralMaterial {
 
     #[inline]
     fn alpha_mode(&self) -> AlphaMode {
-        if self.alpha_test {
+        if self.alpha_blend {
             if self.alpha_additive {
                 AlphaMode::Add
             } else {
@@ -195,12 +197,19 @@ impl Material for RenderBlockGeneralMaterial {
                 shader_defs.push("USE_SNOW".into());
             }
 
-            shader_defs.push("STANDARD_MATERIAL_NORMAL_MAP".into());
-            shader_defs.push("STANDARD_MATERIAL_FLAGS_FLIP_NORMAL_MAP_Y".into());
+            if !key.bind_group_data.cull {
+                shader_defs.push("DOUBLE_SIDED".into());
+            }
+
+            if key.bind_group_data.alpha_test {
+                shader_defs.push("ALPHA_TEST".into());
+            }
         }
 
         if key.bind_group_data.cull {
             descriptor.primitive.cull_mode = Some(Face::Back);
+        } else {
+            descriptor.primitive.cull_mode = None;
         }
 
         if let Some(label) = &mut descriptor.label {
