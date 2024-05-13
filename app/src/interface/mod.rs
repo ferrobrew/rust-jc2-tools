@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use bevy_egui::EguiSet;
 use bevy_file_dialog::FileDialogPlugin;
-use bevy_jc2_render_block::RenderBlockMesh;
+use bevy_inspector_egui::quick::AssetInspectorPlugin;
+use bevy_jc2_render_block::{materials::general::RenderBlockGeneralMaterial, RenderBlockMesh};
 
 use crate::utilities::content::{ContentDirectory, ContentState};
 
@@ -18,12 +19,13 @@ pub struct InterfacePlugin;
 
 impl Plugin for InterfacePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(
+        app.add_plugins((
             FileDialogPlugin::new()
                 .with_pick_file::<RenderBlockMesh>()
                 .with_save_file::<RenderBlockMesh>()
                 .with_pick_directory::<ContentDirectory>(),
-        )
+            AssetInspectorPlugin::<RenderBlockGeneralMaterial>::new(),
+        ))
         .add_event::<FileTreeEvent>()
         .add_systems(
             PreUpdate,
