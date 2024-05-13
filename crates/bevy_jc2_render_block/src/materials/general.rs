@@ -120,7 +120,7 @@ impl From<&GeneralAttributes> for RenderBlockGeneralMaterial {
             uv1_scale: Vec2::from_array(value.vertex_info.uv1_extent.into()),
             cull: !value.flags.contains(GeneralFlags::NO_CULLING),
             depth_test: !value.flags.contains(GeneralFlags::NO_DEPTH_TEST),
-            depth_bias: value.depth_bias,
+            depth_bias: value.depth_bias * 10000000.0,
             alpha_test: value.flags.contains(GeneralFlags::ALPHA_TEST),
             alpha_blend: value.flags.contains(GeneralFlags::ALPHA_BLENDING),
             alpha_additive: value.flags.contains(GeneralFlags::ADDITIVE_ALPHA),
