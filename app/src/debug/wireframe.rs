@@ -21,17 +21,17 @@ pub struct WireframeNormals;
 #[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component)]
 pub struct WireframeNormalColors {
-    pub normal_color: Color,
-    pub tangent_color: Color,
-    pub bitangent_color: Color,
+    pub normal_color: Srgba,
+    pub tangent_color: Srgba,
+    pub bitangent_color: Srgba,
 }
 
 impl Default for WireframeNormalColors {
     fn default() -> Self {
         Self {
-            normal_color: Color::RED,
-            tangent_color: Color::GREEN,
-            bitangent_color: Color::BLUE,
+            normal_color: bevy::color::palettes::basic::RED,
+            tangent_color: bevy::color::palettes::basic::GREEN,
+            bitangent_color: bevy::color::palettes::basic::BLUE,
         }
     }
 }
@@ -45,9 +45,9 @@ pub struct NoWireframeNormals;
 pub struct WireframeNormalsConfig {
     pub global: bool,
     pub length: f32,
-    pub default_normal_color: Color,
-    pub default_tangent_color: Color,
-    pub default_bitangent_color: Color,
+    pub default_normal_color: Srgba,
+    pub default_tangent_color: Srgba,
+    pub default_bitangent_color: Srgba,
 }
 
 impl Default for WireframeNormalsConfig {
@@ -55,9 +55,9 @@ impl Default for WireframeNormalsConfig {
         Self {
             global: false,
             length: 0.02,
-            default_normal_color: Color::RED,
-            default_tangent_color: Color::GREEN,
-            default_bitangent_color: Color::BLUE,
+            default_normal_color: bevy::color::palettes::basic::RED,
+            default_tangent_color: bevy::color::palettes::basic::GREEN,
+            default_bitangent_color: bevy::color::palettes::basic::BLUE,
         }
     }
 }

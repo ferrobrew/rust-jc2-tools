@@ -22,14 +22,19 @@ fn main() {
     App::new()
         .add_plugins((
             FileSystemPlugin,
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "JC2 Tools".into(),
-                    position: WindowPosition::Centered(MonitorSelection::Primary),
+            DefaultPlugins
+                .set(AssetPlugin {
+                    meta_check: bevy::asset::AssetMetaCheck::Never,
+                    ..default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "JC2 Tools".into(),
+                        position: WindowPosition::Centered(MonitorSelection::Primary),
+                        ..default()
+                    }),
                     ..default()
                 }),
-                ..default()
-            }),
             ContentPlugin,
             EguiPlugin,
             InterfacePlugin,

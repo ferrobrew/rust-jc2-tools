@@ -26,24 +26,22 @@ impl AssetLoader for FileListLoader {
     type Settings = ();
     type Error = FileListError;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut bevy::asset::io::Reader,
+        reader: &'a mut bevy::asset::io::Reader<'_>,
         _settings: &'a Self::Settings,
-        _load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut buffer = String::new();
-            reader.read_to_string(&mut buffer).await?;
+        _load_context: &'a mut bevy::asset::LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut buffer = String::new();
+        reader.read_to_string(&mut buffer).await?;
 
-            let mut paths = HashList::new();
-            for path in buffer.lines() {
-                if paths.insert_path(path).is_some() {
-                    return Err(FileListError::HashCollision { path: path.into() });
-                }
+        let mut paths = HashList::new();
+        for path in buffer.lines() {
+            if paths.insert_path(path).is_some() {
+                return Err(FileListError::HashCollision { path: path.into() });
             }
+        }
 
-            Ok(FileList { paths })
-        })
+        Ok(FileList { paths })
     }
 }

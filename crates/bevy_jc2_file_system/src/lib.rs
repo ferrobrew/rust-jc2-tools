@@ -2,7 +2,7 @@ use async_lock::RwLock;
 use bevy::{
     asset::{
         io::{AssetSource, AssetSourceId},
-        AssetLoadFailedEvent, AssetMetaCheck,
+        AssetLoadFailedEvent,
     },
     prelude::*,
     utils::HashMap,
@@ -219,24 +219,23 @@ impl FileSystemMounts {
 impl Plugin for FileSystemPlugin {
     fn build(&self, app: &mut App) {
         let mounts = Arc::new(FileSystemMountsData::default());
-        app.insert_resource(AssetMetaCheck::Never)
-            .insert_resource(FileSystemMounts {
-                mounts: mounts.clone(),
-                #[cfg(feature = "tree")]
-                file_tree: FileSystemTree::with_capacity(256),
-                ..default()
-            })
-            .register_asset_source(
-                AssetSourceId::Default,
-                AssetSource::build().with_reader(move || {
-                    Box::new(FileSystemAssetReader::new(
-                        mounts.clone(),
-                        AssetSource::get_default_reader("assets".into()),
-                    ))
-                }),
-            )
-            .add_event::<FileSystemEvent>()
-            .add_systems(First, process_archive_events);
+        app.insert_resource(FileSystemMounts {
+            mounts: mounts.clone(),
+            #[cfg(feature = "tree")]
+            file_tree: FileSystemTree::with_capacity(256),
+            ..default()
+        })
+        .register_asset_source(
+            AssetSourceId::Default,
+            AssetSource::build().with_reader(move || {
+                Box::new(FileSystemAssetReader::new(
+                    mounts.clone(),
+                    AssetSource::get_default_reader("assets".into()),
+                ))
+            }),
+        )
+        .add_event::<FileSystemEvent>()
+        .add_systems(First, process_archive_events);
     }
 
     fn finish(&self, app: &mut App) {

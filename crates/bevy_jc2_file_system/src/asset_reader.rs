@@ -6,11 +6,8 @@ use std::{
 };
 
 use async_fs::{read_dir, File};
-use bevy::{
-    asset::io::{AssetReader, AssetReaderError, PathStream, Reader},
-    utils::BoxedFuture,
-};
-use futures_io::{AsyncRead, SeekFrom};
+use bevy::asset::io::{AssetReader, AssetReaderError, ErasedAssetReader, PathStream, Reader};
+use futures_io::{AsyncRead, AsyncSeek, SeekFrom};
 use futures_lite::{future::yield_now, io::Cursor, AsyncReadExt, AsyncSeekExt, Stream, StreamExt};
 use jc2_hashing::HashString;
 
@@ -21,13 +18,13 @@ use crate::{
 
 pub(crate) struct FileSystemAssetReader {
     mounts: Arc<FileSystemMountsData>,
-    default_reader: Box<dyn AssetReader>,
+    default_reader: Box<dyn ErasedAssetReader>,
 }
 
 impl std::fmt::Debug for FileSystemAssetReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FilesystemAssetReader")
-            .field("data", &self.mounts)
+            .field("mounts", &self.mounts)
             .finish_non_exhaustive()
     }
 }
@@ -36,7 +33,7 @@ impl FileSystemAssetReader {
     #[must_use]
     pub(crate) fn new(
         mounts: Arc<FileSystemMountsData>,
-        mut reader: impl FnMut() -> Box<dyn AssetReader> + Send + Sync + 'static,
+        mut reader: impl FnMut() -> Box<dyn ErasedAssetReader> + Send + Sync + 'static,
     ) -> Self {
         Self {
             mounts,
@@ -200,6 +197,16 @@ impl<'a> AsyncRead for FileReader<'a> {
     }
 }
 
+impl<'a> AsyncSeek for FileReader<'a> {
+    fn poll_seek(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        pos: SeekFrom,
+    ) -> Poll<std::io::Result<u64>> {
+        std::pin::pin!(&mut self.get_mut().0).poll_seek(cx, pos)
+    }
+}
+
 struct DirReader(Vec<PathBuf>);
 
 impl Stream for DirReader {
@@ -226,55 +233,38 @@ pub(crate) fn get_meta_path(path: &Path) -> PathBuf {
 }
 
 impl AssetReader for FileSystemAssetReader {
-    fn read<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
-        Box::pin(async move {
-            match self.read(path).await {
-                Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
-                Err(_) => self.default_reader.read(path).await,
-            }
-        })
+    async fn read<'a>(&'a self, path: &'a Path) -> Result<Box<Reader<'a>>, AssetReaderError> {
+        match self.read(path).await {
+            Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
+            Err(_) => self.default_reader.read(path).await,
+        }
     }
 
-    fn read_meta<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> BoxedFuture<'a, Result<Box<Reader<'a>>, AssetReaderError>> {
-        Box::pin(async move {
-            match self.read(&get_meta_path(path)).await {
-                Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
-                Err(_) => self.default_reader.read_meta(path).await,
-            }
-        })
+    async fn read_meta<'a>(&'a self, path: &'a Path) -> Result<Box<Reader<'a>>, AssetReaderError> {
+        match self.read(&get_meta_path(path)).await {
+            Ok(reader) => Ok(Box::new(reader) as Box<Reader>),
+            Err(_) => self.default_reader.read_meta(path).await,
+        }
     }
 
-    fn read_directory<'a>(
+    async fn read_directory<'a>(
         &'a self,
         path: &'a Path,
-    ) -> BoxedFuture<'a, Result<Box<PathStream>, AssetReaderError>> {
-        Box::pin(async move {
-            if self.is_directory(path).await {
-                self.read_directory(path)
-                    .await
-                    .map(|read_dir| Box::new(read_dir) as Box<PathStream>)
-            } else {
-                self.default_reader.read_directory(path).await
-            }
-        })
+    ) -> Result<Box<PathStream>, AssetReaderError> {
+        if self.is_directory(path).await {
+            self.read_directory(path)
+                .await
+                .map(|read_dir| Box::new(read_dir) as Box<PathStream>)
+        } else {
+            self.default_reader.read_directory(path).await
+        }
     }
 
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> BoxedFuture<'a, Result<bool, AssetReaderError>> {
-        Box::pin(async move {
-            if self.is_directory(path).await {
-                Ok(true)
-            } else {
-                self.default_reader.is_directory(path).await
-            }
-        })
+    async fn is_directory<'a>(&'a self, path: &'a Path) -> Result<bool, AssetReaderError> {
+        if self.is_directory(path).await {
+            Ok(true)
+        } else {
+            self.default_reader.is_directory(path).await
+        }
     }
 }

@@ -1,6 +1,6 @@
 #import bevy_pbr::mesh_bindings
 #import bevy_pbr::mesh_view_bindings::view
-#import bevy_pbr::mesh_functions::{get_model_matrix, mesh_position_local_to_world, mesh_position_local_to_clip, mesh_normal_local_to_world, mesh_tangent_local_to_world}
+#import bevy_pbr::mesh_functions::{get_world_from_local, mesh_position_local_to_world, mesh_position_local_to_clip, mesh_normal_local_to_world, mesh_tangent_local_to_world}
 #import bevy_pbr::pbr_types::{PbrInput, pbr_input_new}
 #import bevy_pbr::pbr_functions::{prepare_world_normal, apply_normal_mapping, calculate_view, apply_pbr_lighting}
 #import bevy_core_pipeline::tonemapping::tone_mapping
@@ -50,7 +50,7 @@ struct VertexOutput {
 
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
-    let model = get_model_matrix(vertex.instance_index);
+    let model = get_world_from_local(vertex.instance_index);
     let position = vec4<f32>(vertex.position, 1.0);
 
     var out: VertexOutput;
@@ -141,7 +141,7 @@ fn fragment(
 #endif
         is_front,
     );
-    pbr_input.is_orthographic = view.projection[3].w == 1.0;
+    pbr_input.is_orthographic = view.clip_from_view[3].w == 1.0;
     pbr_input.N = N;
     pbr_input.V = calculate_view(input.world_position, pbr_input.is_orthographic);
 

@@ -1,11 +1,13 @@
 use bevy::{
     prelude::*,
     render::{
+        mesh::MeshVertexBufferLayoutRef,
         render_asset::RenderAssets,
         render_resource::{
             AsBindGroup, AsBindGroupShaderType, CompareFunction, Face, RenderPipelineDescriptor,
             ShaderRef, ShaderType, SpecializedMeshPipelineError,
         },
+        texture::GpuImage,
     },
 };
 use jc2_file_formats::render_block_model::{GeneralAttributes, GeneralFlags};
@@ -45,7 +47,7 @@ impl AsBindGroupShaderType<RenderBlockGeneralMaterialUniform> for RenderBlockGen
     #[inline]
     fn as_bind_group_shader_type(
         &self,
-        _images: &RenderAssets<Image>,
+        _images: &RenderAssets<GpuImage>,
     ) -> RenderBlockGeneralMaterialUniform {
         RenderBlockGeneralMaterialUniform {
             specular_power: self.specular_power,
@@ -173,10 +175,10 @@ impl Material for RenderBlockGeneralMaterial {
     fn specialize(
         _pipeline: &bevy::pbr::MaterialPipeline<Self>,
         descriptor: &mut RenderPipelineDescriptor,
-        layout: &bevy::render::mesh::MeshVertexBufferLayout,
+        layout: &MeshVertexBufferLayoutRef,
         key: bevy::pbr::MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
-        let vertex_layout = layout.get_layout(&[
+        let vertex_layout = layout.0.get_layout(&[
             Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
             Mesh::ATTRIBUTE_UV_0.at_shader_location(1),
             Mesh::ATTRIBUTE_UV_1.at_shader_location(2),

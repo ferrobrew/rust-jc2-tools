@@ -57,62 +57,60 @@ impl AssetLoader for ArchiveLoader {
     type Settings = ();
     type Error = ArchiveError;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut bevy::asset::io::Reader,
+        reader: &'a mut bevy::asset::io::Reader<'_>,
         _settings: &'a Self::Settings,
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader.read_to_end(&mut bytes).await?;
-            let mut cursor = binrw::io::Cursor::new(&bytes);
+        load_context: &'a mut bevy::asset::LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        let mut cursor = binrw::io::Cursor::new(&bytes);
 
-            let source_path = load_context.path().to_path_buf();
-            let hash = HashString::from_str(&source_path.to_string_lossy());
+        let source_path = load_context.path().to_path_buf();
+        let hash = HashString::from_str(&source_path.to_string_lossy());
 
-            match archive_type(load_context.path()) {
-                ArchiveType::Stream => {
-                    let archive = StreamArchive::read(&mut cursor)?;
-                    Ok(Archive {
-                        hash,
-                        source_path,
-                        target_path: None,
-                        #[cfg(feature = "tree")]
-                        paths: ArchivePaths::HashList({
-                            let mut paths = HashList::with_capacity(archive.entries.len());
-                            for path in archive.entries.keys() {
-                                paths.insert_path(path);
-                            }
-                            paths
-                        }),
-                        entries: archive
-                            .entries
-                            .into_iter()
-                            .map(|(k, v)| (HashString::from_str(&k), ArchiveEntry::Preloaded(v)))
-                            .collect(),
-                    })
-                }
-                ArchiveType::File => {
-                    let archive = ArchiveTable::read(&mut cursor)?;
-                    Ok(Archive {
-                        hash,
-                        source_path: source_path.clone(),
-                        target_path: Some(source_path.with_extension("arc")),
-                        #[cfg(feature = "tree")]
-                        paths: ArchivePaths::FileList(
-                            load_context.load(source_path.with_extension("filelist")),
-                        ),
-                        entries: archive
-                            .entries
-                            .into_iter()
-                            .map(|(k, v)| (k, ArchiveEntry::Streamed(v)))
-                            .collect(),
-                    })
-                }
-                ArchiveType::Unknown => Err(ArchiveError::UnknownFormat { path: source_path }),
+        match archive_type(load_context.path()) {
+            ArchiveType::Stream => {
+                let archive = StreamArchive::read(&mut cursor)?;
+                Ok(Archive {
+                    hash,
+                    source_path,
+                    target_path: None,
+                    #[cfg(feature = "tree")]
+                    paths: ArchivePaths::HashList({
+                        let mut paths = HashList::with_capacity(archive.entries.len());
+                        for path in archive.entries.keys() {
+                            paths.insert_path(path);
+                        }
+                        paths
+                    }),
+                    entries: archive
+                        .entries
+                        .into_iter()
+                        .map(|(k, v)| (HashString::from_str(&k), ArchiveEntry::Preloaded(v)))
+                        .collect(),
+                })
             }
-        })
+            ArchiveType::File => {
+                let archive = ArchiveTable::read(&mut cursor)?;
+                Ok(Archive {
+                    hash,
+                    source_path: source_path.clone(),
+                    target_path: Some(source_path.with_extension("arc")),
+                    #[cfg(feature = "tree")]
+                    paths: ArchivePaths::FileList(
+                        load_context.load(source_path.with_extension("filelist")),
+                    ),
+                    entries: archive
+                        .entries
+                        .into_iter()
+                        .map(|(k, v)| (k, ArchiveEntry::Streamed(v)))
+                        .collect(),
+                })
+            }
+            ArchiveType::Unknown => Err(ArchiveError::UnknownFormat { path: source_path }),
+        }
     }
 }
 

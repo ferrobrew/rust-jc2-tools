@@ -25,12 +25,13 @@ anyhow = "1.0"
 async-fs = "2.1"
 async-io = "2.3"
 async-lock = "3.3"
-bevy = { version = "0.13", default-features = false }
-bevy_egui = "0.27"
-bevy_file_dialog = "0.5.0"
-bevy_panorbit_camera = { version = "0.18", features = ["bevy_egui"] }
-bevy_save = { version = "0.14", default-features = false }
-bevy-inspector-egui = { version = "0.24" }
+bevy = { version = "0.14", default-features = false }
+bevy_egui = "0.28"
+bevy_file_dialog = "0.6.0"
+bevy_panorbit_camera = { version = "0.19", features = ["bevy_egui"] }
+bevy_save = { git = "https://github.com/perry-blueberry/bevy_save", branch = "update-to-bevy-0.14", default-features = false }
+# bevy_save = { version = "0.14", default-features = false }
+bevy-inspector-egui = { version = "0.25" }
 binrw = "0.13"
 bitflags = { version = "2.4", features = ["bytemuck"] }
 bytemuck = { version = "1.14", features = ["must_cast"] }

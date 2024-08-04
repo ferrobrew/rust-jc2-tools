@@ -65,24 +65,27 @@ pub fn draw_file_tree(
                             let mounted = mounts.has_mounted_archive(path);
                             let label = if mounted { "unmount" } else { "mount" };
 
-                            ui.set_enabled(!mounts.is_mounting_archive(path));
-                            if ui.button(label).clicked() {
-                                event_writer.send(if mounted {
-                                    FileTreeEvent::UnmountArchive { path: path.into() }
-                                } else {
-                                    FileTreeEvent::MountArchive { path: path.into() }
-                                });
-                                ui.close_menu();
-                            }
+                            ui.add_enabled_ui(!mounts.is_mounting_archive(path), |ui| {
+                                if ui.button(label).clicked() {
+                                    event_writer.send(if mounted {
+                                        FileTreeEvent::UnmountArchive { path: path.into() }
+                                    } else {
+                                        FileTreeEvent::MountArchive { path: path.into() }
+                                    });
+                                    ui.close_menu();
+                                }
+                            });
                         });
                     }
                     "rbm" => {
                         context_menu(&mut |ui| {
-                            ui.set_enabled(!mounts.is_mounting_archives());
-                            if ui.button("load").clicked() {
-                                event_writer.send(FileTreeEvent::LoadModel { path: path.into() });
-                                ui.close_menu();
-                            }
+                            ui.add_enabled_ui(!mounts.is_mounting_archive(path), |ui| {
+                                if ui.button("load").clicked() {
+                                    event_writer
+                                        .send(FileTreeEvent::LoadModel { path: path.into() });
+                                    ui.close_menu();
+                                }
+                            });
                         });
                     }
                     _ => {}
