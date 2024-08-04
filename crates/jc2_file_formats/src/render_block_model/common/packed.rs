@@ -29,8 +29,8 @@ pub struct PackedUVF32(f32);
 impl From<Vec2<f32>> for PackedUVF32 {
     #[inline]
     fn from(value: Vec2<f32>) -> Self {
-        let x = ((value.x + 0.5).floor().abs() / 64.0).fract();
-        let y = (((value.y + 0.5).floor().abs() / 64.0) * 2048.0).fract();
+        let x = (value.x).fract();
+        let y = (value.y.fract() * 2048.0).floor();
         Self(x + y)
     }
 }
@@ -103,9 +103,9 @@ impl From<Vec3<f32>> for PackedNormalF32 {
     #[inline]
     fn from(value: Vec3<f32>) -> Self {
         Self({
-            let x = (value.x * 0.5 + 1.0) * 1.0;
-            let y = (value.y * 0.5 + 1.0) * 256.0;
-            let z = (value.z * 0.5 + 1.0) * 65536.0;
+            let x = ((value.x + 1.0) * 127.0).floor() / 256.0;
+            let y = ((value.y + 1.0) * 127.0).floor();
+            let z = ((value.z + 1.0) * 127.0).floor() * 256.0;
             x + y + z
         })
     }
@@ -131,10 +131,10 @@ impl From<Vec4<f32>> for PackedTangentF32 {
     #[inline]
     fn from(value: Vec4<f32>) -> Self {
         Self({
-            let x = (value.x * 0.5 + 1.0) * 1.0;
-            let y = (value.y * 0.5 + 1.0) * 256.0;
-            let z = (value.z * 0.5 + 1.0) * 65536.0;
-            (x + y + z) * value.w.signum()
+            let x = ((value.x + 1.0) * 127.0).floor() / 256.0;
+            let y = ((value.y + 1.0) * 127.0).floor();
+            let z = ((value.z + 1.0) * 127.0).floor() * 256.0;
+            (x + y + z).copysign(value.w)
         })
     }
 }
@@ -188,9 +188,9 @@ impl From<Vec3<f32>> for PackedRGB {
     #[inline]
     fn from(value: Vec3<f32>) -> Self {
         Self({
-            let x = value.x * 1.0;
-            let y = value.y * 64.0;
-            let z = value.z * 4096.0;
+            let x = (value.x * 1.0).fract();
+            let y = (value.y * 64.0).floor();
+            let z = (value.z * 4096.0).floor();
             x + y + z
         })
     }
@@ -215,10 +215,10 @@ impl From<Vec4<f32>> for PackedRGBAF32 {
     #[inline]
     fn from(value: Vec4<f32>) -> Self {
         Self({
-            let x = value.x * 1.0;
-            let y = value.y * 64.0;
-            let z = value.z * 4096.0;
-            let w = value.w * 262144.0;
+            let x = (value.x * 1.0).fract();
+            let y = (value.y * 64.0).floor();
+            let z = (value.z * 4096.0).floor();
+            let w = (value.w * 262144.0).floor();
             x + y + z + w
         })
     }
