@@ -32,7 +32,7 @@ bevy_panorbit_camera = { version = "0.19", features = ["bevy_egui"] }
 bevy_save = { git = "https://github.com/perry-blueberry/bevy_save", branch = "update-to-bevy-0.14", default-features = false }
 # bevy_save = { version = "0.14", default-features = false }
 bevy-inspector-egui = { version = "0.25" }
-binrw = "0.13"
+binrw = "0.14"
 bitflags = { version = "2.4", features = ["bytemuck"] }
 bytemuck = { version = "1.14", features = ["must_cast"] }
 clap = { version = "4.4", features = ["derive"] }
