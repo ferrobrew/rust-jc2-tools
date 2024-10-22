@@ -3586,7 +3586,6 @@ name = "property_container"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "binrw",
  "clap",
  "jc2_file_formats",
 ]

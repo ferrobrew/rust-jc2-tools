@@ -17,5 +17,4 @@ workspace = true
 jc2_file_formats.workspace = true
 
 anyhow.workspace = true
-binrw.workspace = true
 clap.workspace = true

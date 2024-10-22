@@ -6,7 +6,7 @@ use std::{
 use binrw::{binrw, parser, writer, BinRead, BinResult, BinWrite};
 use jc2_hashing::HashString;
 
-use crate::string::LengthString;
+use crate::length::LengthString;
 
 #[binrw]
 #[repr(C)]

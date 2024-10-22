@@ -2,9 +2,8 @@ use binrw::binrw;
 use jc2_hashing::HashString;
 
 use crate::{
+    length::{LengthString, LengthVec},
     math::{Vec2, Vec3, Vec4},
-    string::LengthString,
-    vec::LengthVec,
 };
 
 #[binrw]

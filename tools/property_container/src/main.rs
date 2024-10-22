@@ -1,8 +1,7 @@
 use std::{ops::Deref, path::PathBuf};
 
-use binrw::BinRead;
 use clap::Parser;
-use jc2_file_formats::property_container::PropertyFile;
+use jc2_file_formats::{property_container::PropertyFile, BinRead};
 
 #[derive(Parser)]
 struct Args {
