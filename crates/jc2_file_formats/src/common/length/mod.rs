@@ -4,6 +4,7 @@ use thiserror::Error;
 use crate::BinReadWrite;
 
 pub trait LengthType: BinReadWrite + NumCast + Unsigned + Copy {
+    #[inline]
     #[binrw::parser(reader, endian)]
     fn parse() -> binrw::BinResult<usize> {
         if let Some(count) = Self::read_options(reader, endian, ())?.to_usize() {
@@ -16,6 +17,7 @@ pub trait LengthType: BinReadWrite + NumCast + Unsigned + Copy {
         }
     }
 
+    #[inline]
     #[binrw::writer(writer, endian)]
     fn write(value: usize) -> binrw::BinResult<Self> {
         let length: Option<Self> = NumCast::from(value);
