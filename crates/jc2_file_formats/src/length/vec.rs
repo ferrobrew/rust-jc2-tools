@@ -38,6 +38,13 @@ impl<T: BinReadWrite, L: LengthType> LengthVec<T, L> {
     }
 }
 
+impl<T: BinReadWrite, L: LengthType> AsRef<[T]> for LengthVec<T, L> {
+    #[inline]
+    fn as_ref(&self) -> &[T] {
+        &self.value
+    }
+}
+
 impl<T: BinReadWrite, L: LengthType> Deref for LengthVec<T, L> {
     type Target = Vec<T>;
 
@@ -55,15 +62,27 @@ impl<T: BinReadWrite, L: LengthType> DerefMut for LengthVec<T, L> {
 }
 
 impl<T: BinReadWrite, L: LengthType> From<LengthVec<T, L>> for Vec<T> {
+    #[inline]
     fn from(value: LengthVec<T, L>) -> Self {
         value.value
     }
 }
 
 impl<T: BinReadWrite, L: LengthType> From<Vec<T>> for LengthVec<T, L> {
+    #[inline]
     fn from(value: Vec<T>) -> Self {
         Self {
             value,
+            marker: Default::default(),
+        }
+    }
+}
+
+impl<T: BinReadWrite + Clone, L: LengthType> From<&[T]> for LengthVec<T, L> {
+    #[inline]
+    fn from(value: &[T]) -> Self {
+        Self {
+            value: value.into(),
             marker: Default::default(),
         }
     }

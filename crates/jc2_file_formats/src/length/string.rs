@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use binrw::binrw;
 
 use super::{BinResult, LengthType};
@@ -32,21 +34,50 @@ impl<T: LengthType> LengthString<T> {
 }
 
 impl<T: LengthType> AsRef<str> for LengthString<T> {
+    #[inline]
     fn as_ref(&self) -> &str {
         &self.value
     }
 }
 
+impl<T: LengthType> Deref for LengthString<T> {
+    type Target = String;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<T: LengthType> DerefMut for LengthString<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
 impl<T: LengthType> From<LengthString<T>> for String {
+    #[inline]
     fn from(value: LengthString<T>) -> Self {
         value.value
     }
 }
 
 impl<T: LengthType> From<String> for LengthString<T> {
+    #[inline]
     fn from(value: String) -> Self {
         Self {
             value,
+            marker: Default::default(),
+        }
+    }
+}
+
+impl<T: LengthType> From<&str> for LengthString<T> {
+    #[inline]
+    fn from(value: &str) -> Self {
+        Self {
+            value: value.into(),
             marker: Default::default(),
         }
     }
