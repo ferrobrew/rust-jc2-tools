@@ -20,13 +20,13 @@ pub enum PropertyFileSection {
     #[brw(magic = 1u16)]
     Container(LengthVec<(LengthString<u32>, PropertyFile), u16>),
     #[brw(magic = 2u16)]
-    Value(LengthVec<(LengthString<u32>, PropertyValue), u16>),
+    Value(LengthVec<(LengthString<u32>, PropertyFileValue), u16>),
     #[brw(magic = 3u16)]
     Raw(LengthVec<u8, u16>),
     #[brw(magic = 4u16)]
     HashedContainer(LengthVec<(HashString, PropertyFile), u16>),
     #[brw(magic = 5u16)]
-    HashedValue(LengthVec<(HashString, PropertyValue), u16>),
+    HashedValue(LengthVec<(HashString, PropertyFileValue), u16>),
 }
 
 impl Default for PropertyFileSection {
@@ -37,7 +37,7 @@ impl Default for PropertyFileSection {
 
 #[binrw]
 #[derive(Clone, Default, Debug, PartialEq)]
-pub enum PropertyValue {
+pub enum PropertyFileValue {
     #[default]
     #[brw(magic = 0u8)]
     Empty,
