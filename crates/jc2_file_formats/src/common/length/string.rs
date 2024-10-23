@@ -1,8 +1,8 @@
 use std::ops::{Deref, DerefMut};
 
-use binrw::binrw;
+use binrw::{binrw, BinWrite};
 
-use super::{BinResult, LengthType};
+use super::LengthType;
 
 #[binrw]
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
@@ -15,16 +15,16 @@ pub struct LengthString<T: LengthType> {
 
 impl<T: LengthType> LengthString<T> {
     #[binrw::parser(reader, endian)]
-    fn parse() -> BinResult<String> {
+    fn parse() -> binrw::BinResult<String> {
         let mut buffer = vec![0u8; <T as LengthType>::parse(reader, endian, ())?];
         reader.read_exact(&mut buffer)?;
         Ok(String::from_utf8_lossy(&buffer).to_string())
     }
 
     #[binrw::writer(writer, endian)]
-    fn write(value: &String) -> BinResult<()> {
+    fn write(value: &String) -> binrw::BinResult<()> {
         <T as LengthType>::write(value.as_bytes().len(), writer, endian, ())?;
-        writer.write_all(value.as_bytes())?;
+        value.as_bytes().write_options(writer, endian, ())?;
         Ok(())
     }
 

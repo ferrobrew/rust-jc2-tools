@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use binrw::binrw;
 
-use super::{BinReadWrite, BinResult, LengthType};
+use super::{BinReadWrite, LengthType};
 
 #[binrw]
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
@@ -15,7 +15,7 @@ pub struct LengthVec<T: BinReadWrite, L: LengthType> {
 
 impl<T: BinReadWrite, L: LengthType> LengthVec<T, L> {
     #[binrw::parser(reader, endian)]
-    fn parse() -> BinResult<Vec<T>> {
+    fn parse() -> binrw::BinResult<Vec<T>> {
         let count = <L as LengthType>::parse(reader, endian, ())?;
         let mut result = Vec::with_capacity(count);
         for _ in 0..count {
@@ -25,7 +25,7 @@ impl<T: BinReadWrite, L: LengthType> LengthVec<T, L> {
     }
 
     #[binrw::writer(writer, endian)]
-    fn write(value: &Vec<T>) -> BinResult<()> {
+    fn write(value: &Vec<T>) -> binrw::BinResult<()> {
         <L as LengthType>::write(value.len(), writer, endian, ())?;
         for element in value {
             element.write_options(writer, endian, ())?;

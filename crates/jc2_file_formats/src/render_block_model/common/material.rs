@@ -1,6 +1,6 @@
 use binrw::binrw;
 
-use crate::length::LengthString;
+use crate::common::LengthString;
 
 #[binrw]
 #[brw(repr = u32)]

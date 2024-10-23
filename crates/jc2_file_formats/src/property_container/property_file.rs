@@ -2,7 +2,7 @@ use binrw::binrw;
 use jc2_hashing::HashString;
 
 use crate::{
-    length::{LengthString, LengthVec},
+    common::{LengthString, LengthVec},
     math::{Vec2, Vec3, Vec4},
 };
 
