@@ -174,7 +174,7 @@ pub enum PropertyBlockNodeValue {
         PropertyBlockPointer<PropertyBlockContainer>,
     ),
     #[brw(magic = 2u16)]
-    Variant(
+    Value(
         #[br(parse_with = Self::parse_value)]
         #[bw(write_with = Self::write_value)]
         PropertyBlockValue,
@@ -231,6 +231,18 @@ impl PropertyBlockNodeValue {
     #[binrw::writer(writer, endian)]
     fn write_value(value: &PropertyBlockValue) -> binrw::BinResult<()> {
         Self::write(value, writer, endian, ())
+    }
+}
+
+impl From<PropertyBlockContainer> for PropertyBlockNodeValue {
+    fn from(value: PropertyBlockContainer) -> Self {
+        PropertyBlockNodeValue::Container(value.into())
+    }
+}
+
+impl<T: Into<PropertyBlockValue>> From<T> for PropertyBlockNodeValue {
+    fn from(value: T) -> Self {
+        PropertyBlockNodeValue::Value(value.into())
     }
 }
 
