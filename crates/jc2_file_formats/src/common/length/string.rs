@@ -33,13 +33,6 @@ impl<T: LengthType> LengthString<T> {
     }
 }
 
-impl<T: LengthType> AsRef<str> for LengthString<T> {
-    #[inline]
-    fn as_ref(&self) -> &str {
-        &self.value
-    }
-}
-
 impl<T: LengthType> Deref for LengthString<T> {
     type Target = String;
 
@@ -53,6 +46,13 @@ impl<T: LengthType> DerefMut for LengthString<T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
+    }
+}
+
+impl<T: LengthType> AsRef<str> for LengthString<T> {
+    #[inline]
+    fn as_ref(&self) -> &str {
+        &self.value
     }
 }
 
