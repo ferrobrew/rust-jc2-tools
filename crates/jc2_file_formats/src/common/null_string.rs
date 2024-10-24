@@ -7,7 +7,7 @@ use binrw::{binrw, BinRead, BinWrite};
 pub struct NullString {
     #[br(parse_with = Self::parse)]
     #[bw(write_with = Self::write)]
-    value: String,
+    pub value: String,
 }
 
 impl NullString {

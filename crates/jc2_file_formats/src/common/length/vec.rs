@@ -9,7 +9,7 @@ use super::{BinReadWrite, LengthType};
 pub struct LengthVec<T: BinReadWrite, L: LengthType, const B: bool = false> {
     #[br(parse_with = Self::parse)]
     #[bw(write_with = Self::write)]
-    value: Vec<T>,
+    pub value: Vec<T>,
     marker: std::marker::PhantomData<L>,
 }
 
@@ -67,6 +67,15 @@ impl<T: BinReadWrite, L: LengthType, const B: bool> AsMut<[T]> for LengthVec<T, 
     #[inline]
     fn as_mut(&mut self) -> &mut [T] {
         &mut self.value
+    }
+}
+
+impl<T: BinReadWrite, L: LengthType, const B: bool> IntoIterator for LengthVec<T, L, B> {
+    type Item = T;
+    type IntoIter = <Vec<T> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.value.into_iter()
     }
 }
 

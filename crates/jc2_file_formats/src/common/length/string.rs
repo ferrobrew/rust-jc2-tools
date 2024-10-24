@@ -9,7 +9,7 @@ use super::LengthType;
 pub struct LengthString<T: LengthType> {
     #[br(parse_with = Self::parse)]
     #[bw(write_with = Self::write)]
-    value: String,
+    pub value: String,
     marker: std::marker::PhantomData<T>,
 }
 
