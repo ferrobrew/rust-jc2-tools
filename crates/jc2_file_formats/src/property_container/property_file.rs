@@ -64,3 +64,111 @@ pub enum PropertyFileValue {
     #[brw(magic = 11u8)]
     VecU8(LengthVec<u8, u32>),
 }
+
+impl From<i32> for PropertyFileValue {
+    fn from(value: i32) -> Self {
+        PropertyFileValue::I32(value)
+    }
+}
+
+impl From<f32> for PropertyFileValue {
+    fn from(value: f32) -> Self {
+        PropertyFileValue::F32(value)
+    }
+}
+
+impl From<&str> for PropertyFileValue {
+    fn from(value: &str) -> Self {
+        PropertyFileValue::String(value.into())
+    }
+}
+
+impl From<String> for PropertyFileValue {
+    fn from(value: String) -> Self {
+        PropertyFileValue::String(value.into())
+    }
+}
+
+impl From<[f32; 2]> for PropertyFileValue {
+    fn from(value: [f32; 2]) -> Self {
+        PropertyFileValue::Vec2(value.into())
+    }
+}
+
+impl From<[f32; 3]> for PropertyFileValue {
+    fn from(value: [f32; 3]) -> Self {
+        PropertyFileValue::Vec3(value.into())
+    }
+}
+
+impl From<[f32; 4]> for PropertyFileValue {
+    fn from(value: [f32; 4]) -> Self {
+        PropertyFileValue::Vec4(value.into())
+    }
+}
+
+impl From<Vec2<f32>> for PropertyFileValue {
+    fn from(value: Vec2<f32>) -> Self {
+        PropertyFileValue::Vec2(value)
+    }
+}
+
+impl From<Vec3<f32>> for PropertyFileValue {
+    fn from(value: Vec3<f32>) -> Self {
+        PropertyFileValue::Vec3(value)
+    }
+}
+
+impl From<Vec4<f32>> for PropertyFileValue {
+    fn from(value: Vec4<f32>) -> Self {
+        PropertyFileValue::Vec4(value)
+    }
+}
+
+impl From<[f32; 9]> for PropertyFileValue {
+    fn from(value: [f32; 9]) -> Self {
+        PropertyFileValue::Mat3x3(value)
+    }
+}
+
+impl From<[f32; 12]> for PropertyFileValue {
+    fn from(value: [f32; 12]) -> Self {
+        PropertyFileValue::Mat3x4(value)
+    }
+}
+
+impl From<&[i32]> for PropertyFileValue {
+    fn from(value: &[i32]) -> Self {
+        PropertyFileValue::VecI32(value.into())
+    }
+}
+
+impl From<&[f32]> for PropertyFileValue {
+    fn from(value: &[f32]) -> Self {
+        PropertyFileValue::VecF32(value.into())
+    }
+}
+
+impl From<&[u8]> for PropertyFileValue {
+    fn from(value: &[u8]) -> Self {
+        PropertyFileValue::VecU8(value.into())
+    }
+}
+
+impl From<Vec<i32>> for PropertyFileValue {
+    fn from(value: Vec<i32>) -> Self {
+        PropertyFileValue::VecI32(value.into())
+    }
+}
+
+impl From<Vec<f32>> for PropertyFileValue {
+    fn from(value: Vec<f32>) -> Self {
+        PropertyFileValue::VecF32(value.into())
+    }
+}
+
+impl From<Vec<u8>> for PropertyFileValue {
+    fn from(value: Vec<u8>) -> Self {
+        PropertyFileValue::VecU8(value.into())
+    }
+}
