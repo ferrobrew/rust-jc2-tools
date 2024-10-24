@@ -8,9 +8,7 @@ use crate::{
 
 #[binrw]
 #[derive(Clone, Default, Debug)]
-pub struct PropertyFile {
-    pub sections: LengthVec<PropertyFileSection, u8>,
-}
+pub struct PropertyFile(pub LengthVec<PropertyFileSection, u8>);
 
 #[binrw]
 #[derive(Clone, Debug)]
@@ -61,8 +59,6 @@ pub enum PropertyFileValue {
     VecI32(LengthVec<i32, u32>),
     #[brw(magic = 10u8)]
     VecF32(LengthVec<f32, u32>),
-    #[brw(magic = 11u8)]
-    VecU8(LengthVec<u8, u32>),
 }
 
 impl From<i32> for PropertyFileValue {
@@ -149,12 +145,6 @@ impl From<&[f32]> for PropertyFileValue {
     }
 }
 
-impl From<&[u8]> for PropertyFileValue {
-    fn from(value: &[u8]) -> Self {
-        PropertyFileValue::VecU8(value.into())
-    }
-}
-
 impl From<Vec<i32>> for PropertyFileValue {
     fn from(value: Vec<i32>) -> Self {
         PropertyFileValue::VecI32(value.into())
@@ -164,11 +154,5 @@ impl From<Vec<i32>> for PropertyFileValue {
 impl From<Vec<f32>> for PropertyFileValue {
     fn from(value: Vec<f32>) -> Self {
         PropertyFileValue::VecF32(value.into())
-    }
-}
-
-impl From<Vec<u8>> for PropertyFileValue {
-    fn from(value: Vec<u8>) -> Self {
-        PropertyFileValue::VecU8(value.into())
     }
 }

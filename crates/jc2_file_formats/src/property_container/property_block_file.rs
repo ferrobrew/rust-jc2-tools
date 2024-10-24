@@ -12,11 +12,11 @@ use crate::{
 #[binrw]
 #[brw(magic = b"PCBB")]
 #[derive(Clone, Default, Debug)]
-pub struct PropertyBlockFile {
+pub struct PropertyBlockFile(
     #[br(parse_with = Self::parse)]
     #[bw(write_with = Self::write)]
-    pub container: PropertyBlockContainer,
-}
+    pub PropertyBlockContainer,
+);
 
 impl PropertyBlockFile {
     const DATA_OFFSET: u64 = 8;
@@ -45,6 +45,63 @@ impl PropertyBlockFile {
         size.write_options(writer, endian, ())?;
         writer.seek_relative(size as i64)?;
 
+        Ok(())
+    }
+}
+
+#[inline]
+fn offset_to_position(offset: u32) -> u64 {
+    offset as u64 + PropertyBlockFile::DATA_OFFSET
+}
+
+#[inline]
+fn position_to_offset(position: u64) -> u32 {
+    (position - PropertyBlockFile::DATA_OFFSET) as u32
+}
+
+#[binrw]
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct PropertyBlockContainer(
+    #[br(parse_with = Self::parse)]
+    #[bw(write_with = Self::write)]
+    pub Vec<PropertyBlockNode>,
+);
+
+impl PropertyBlockContainer {
+    #[inline]
+    #[binrw::parser(reader, endian)]
+    fn parse() -> binrw::BinResult<Vec<PropertyBlockNode>> {
+        let mut result = vec![];
+        loop {
+            result.push(PropertyBlockNode::read_options(reader, endian, ())?);
+
+            // Continue reading until we hit an empty `PropertyBlockPointer`
+            let next = u32::read_options(reader, endian, ())?;
+            if next != u32::MAX {
+                reader.seek(std::io::SeekFrom::Start(offset_to_position(next)))?;
+            } else {
+                break;
+            }
+        }
+        Ok(result)
+    }
+
+    #[inline]
+    #[binrw::writer(writer, endian)]
+    fn write(value: &Vec<PropertyBlockNode>) -> binrw::BinResult<()> {
+        let mut it = value.iter().peekable();
+        while let Some(node) = it.next() {
+            let start = writer.stream_position()?;
+            node.write_options(writer, endian, ())?;
+
+            // Patch `PropertyBlockPointer` to point to next node
+            if it.peek().is_some() {
+                let end = writer.stream_position()?;
+                writer.seek(std::io::SeekFrom::Start(start + 12))?;
+                position_to_offset(end).write_options(writer, endian, ())?;
+                writer.seek(std::io::SeekFrom::Start(end))?;
+            }
+        }
         Ok(())
     }
 }
@@ -100,66 +157,12 @@ impl From<&[PropertyBlockNode]> for PropertyBlockContainer {
     }
 }
 
-#[inline]
-fn offset_to_position(offset: u32) -> u64 {
-    offset as u64 + PropertyBlockFile::DATA_OFFSET
-}
-
-#[inline]
-fn position_to_offset(position: u64) -> u32 {
-    (position - PropertyBlockFile::DATA_OFFSET) as u32
-}
-
 #[binrw]
 #[derive(Clone, Default, Debug, PartialEq)]
-pub struct PropertyBlockContainer(
-    #[br(parse_with = Self::parse)]
-    #[bw(write_with = Self::write)]
-    Vec<PropertyBlockNode>,
-);
-
-impl PropertyBlockContainer {
-    #[inline]
-    #[binrw::parser(reader, endian)]
-    fn parse() -> binrw::BinResult<Vec<PropertyBlockNode>> {
-        let mut result = vec![];
-        loop {
-            result.push(PropertyBlockNode::read_options(reader, endian, ())?);
-
-            // Continue reading until we hit an empty `PropertyBlockPointer`
-            let next = u32::read_options(reader, endian, ())?;
-            if next != u32::MAX {
-                reader.seek(std::io::SeekFrom::Start(offset_to_position(next)))?;
-            } else {
-                break;
-            }
-        }
-        Ok(result)
-    }
-
-    #[inline]
-    #[binrw::writer(writer, endian)]
-    fn write(value: &Vec<PropertyBlockNode>) -> binrw::BinResult<()> {
-        let mut it = value.iter().peekable();
-        while let Some(node) = it.next() {
-            let start = writer.stream_position()?;
-            node.write_options(writer, endian, ())?;
-
-            // Patch `PropertyBlockPointer` to point to next node
-            if it.peek().is_some() {
-                let end = writer.stream_position()?;
-                writer.seek(std::io::SeekFrom::Start(start + 12))?;
-                position_to_offset(end).write_options(writer, endian, ())?;
-                writer.seek(std::io::SeekFrom::Start(end))?;
-            }
-        }
-        Ok(())
-    }
+pub struct PropertyBlockNode {
+    pub hash: HashString,
+    pub value: PropertyBlockNodeValue,
 }
-
-#[binrw]
-#[derive(Clone, Default, Debug, PartialEq)]
-pub struct PropertyBlockNode(pub HashString, pub PropertyBlockNodeValue);
 
 #[binrw]
 #[derive(Clone, Default, Debug, PartialEq)]
@@ -272,8 +275,6 @@ pub enum PropertyBlockValue {
     VecI32(PropertyBlockPointer<LengthVec<i32, u32, true>>),
     #[brw(magic = 10u32)]
     VecF32(PropertyBlockPointer<LengthVec<f32, u32, true>>),
-    #[brw(magic = 11u32)]
-    VecU8(PropertyBlockPointer<LengthVec<u8, u32, true>>),
 }
 
 impl From<i32> for PropertyBlockValue {
@@ -360,12 +361,6 @@ impl From<&[f32]> for PropertyBlockValue {
     }
 }
 
-impl From<&[u8]> for PropertyBlockValue {
-    fn from(value: &[u8]) -> Self {
-        PropertyBlockValue::VecU8(LengthVec::from(value).into())
-    }
-}
-
 impl From<Vec<i32>> for PropertyBlockValue {
     fn from(value: Vec<i32>) -> Self {
         PropertyBlockValue::VecI32(LengthVec::from(value).into())
@@ -378,18 +373,12 @@ impl From<Vec<f32>> for PropertyBlockValue {
     }
 }
 
-impl From<Vec<u8>> for PropertyBlockValue {
-    fn from(value: Vec<u8>) -> Self {
-        PropertyBlockValue::VecU8(LengthVec::from(value).into())
-    }
-}
-
 #[binrw]
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct PropertyBlockPointer<T: Default + PartialEq + BinReadWrite>(
     #[br(parse_with = Self::parse)]
     #[bw(write_with = Self::write)]
-    T,
+    pub T,
 );
 
 impl<T: Default + PartialEq + BinReadWrite> PropertyBlockPointer<T> {
