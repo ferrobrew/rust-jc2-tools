@@ -9,6 +9,8 @@ use crate::{
     BinReadWrite,
 };
 
+use super::PropertyValue;
+
 #[binrw]
 #[brw(magic = b"PCBB")]
 #[derive(Clone, Default, Debug)]
@@ -277,99 +279,21 @@ pub enum PropertyBlockValue {
     VecF32(PropertyBlockPointer<LengthVec<f32, u32, true>>),
 }
 
-impl From<i32> for PropertyBlockValue {
-    fn from(value: i32) -> Self {
-        PropertyBlockValue::I32(value)
-    }
-}
-
-impl From<f32> for PropertyBlockValue {
-    fn from(value: f32) -> Self {
-        PropertyBlockValue::F32(value)
-    }
-}
-
-impl From<&str> for PropertyBlockValue {
-    fn from(value: &str) -> Self {
-        PropertyBlockValue::String(NullString::from(value).into())
-    }
-}
-
-impl From<String> for PropertyBlockValue {
-    fn from(value: String) -> Self {
-        PropertyBlockValue::String(NullString::from(value).into())
-    }
-}
-
-impl From<[f32; 2]> for PropertyBlockValue {
-    fn from(value: [f32; 2]) -> Self {
-        PropertyBlockValue::Vec2(Vec2::from(value).into())
-    }
-}
-
-impl From<[f32; 3]> for PropertyBlockValue {
-    fn from(value: [f32; 3]) -> Self {
-        PropertyBlockValue::Vec3(Vec3::from(value).into())
-    }
-}
-
-impl From<[f32; 4]> for PropertyBlockValue {
-    fn from(value: [f32; 4]) -> Self {
-        PropertyBlockValue::Vec4(Vec4::from(value).into())
-    }
-}
-
-impl From<Vec2<f32>> for PropertyBlockValue {
-    fn from(value: Vec2<f32>) -> Self {
-        PropertyBlockValue::Vec2(value.into())
-    }
-}
-
-impl From<Vec3<f32>> for PropertyBlockValue {
-    fn from(value: Vec3<f32>) -> Self {
-        PropertyBlockValue::Vec3(value.into())
-    }
-}
-
-impl From<Vec4<f32>> for PropertyBlockValue {
-    fn from(value: Vec4<f32>) -> Self {
-        PropertyBlockValue::Vec4(value.into())
-    }
-}
-
-impl From<[f32; 9]> for PropertyBlockValue {
-    fn from(value: [f32; 9]) -> Self {
-        PropertyBlockValue::Mat3x3(value.into())
-    }
-}
-
-impl From<[f32; 12]> for PropertyBlockValue {
-    fn from(value: [f32; 12]) -> Self {
-        PropertyBlockValue::Mat3x4(value.into())
-    }
-}
-
-impl From<&[i32]> for PropertyBlockValue {
-    fn from(value: &[i32]) -> Self {
-        PropertyBlockValue::VecI32(LengthVec::from(value).into())
-    }
-}
-
-impl From<&[f32]> for PropertyBlockValue {
-    fn from(value: &[f32]) -> Self {
-        PropertyBlockValue::VecF32(LengthVec::from(value).into())
-    }
-}
-
-impl From<Vec<i32>> for PropertyBlockValue {
-    fn from(value: Vec<i32>) -> Self {
-        PropertyBlockValue::VecI32(LengthVec::from(value).into())
-    }
-}
-
-impl From<Vec<f32>> for PropertyBlockValue {
-    fn from(value: Vec<f32>) -> Self {
-        PropertyBlockValue::VecF32(LengthVec::from(value).into())
+impl From<PropertyValue> for PropertyBlockValue {
+    fn from(value: PropertyValue) -> Self {
+        match value {
+            PropertyValue::Empty => Self::Empty,
+            PropertyValue::I32(value) => Self::I32(value),
+            PropertyValue::F32(value) => Self::F32(value),
+            PropertyValue::String(value) => Self::String(value.into()),
+            PropertyValue::Vec2(value) => Self::Vec2(value.into()),
+            PropertyValue::Vec3(value) => Self::Vec3(value.into()),
+            PropertyValue::Vec4(value) => Self::Vec4(value.into()),
+            PropertyValue::Mat3x3(value) => Self::Mat3x3(value.into()),
+            PropertyValue::Mat3x4(value) => Self::Mat3x4(value.into()),
+            PropertyValue::VecI32(value) => Self::VecI32(value.into()),
+            PropertyValue::VecF32(value) => Self::VecF32(value.into()),
+        }
     }
 }
 
@@ -446,6 +370,27 @@ impl<T: Default + PartialEq + BinReadWrite> AsMut<T> for PropertyBlockPointer<T>
     #[inline]
     fn as_mut(&mut self) -> &mut T {
         &mut self.0
+    }
+}
+
+impl From<String> for PropertyBlockPointer<NullString> {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<Vec<i32>> for PropertyBlockPointer<LengthVec<i32, u32, true>> {
+    #[inline]
+    fn from(value: Vec<i32>) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<Vec<f32>> for PropertyBlockPointer<LengthVec<f32, u32, true>> {
+    #[inline]
+    fn from(value: Vec<f32>) -> Self {
+        Self(value.into())
     }
 }
 
