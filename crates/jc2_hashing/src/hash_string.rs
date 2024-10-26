@@ -57,6 +57,13 @@ impl Default for HashString {
     }
 }
 
+impl From<&str> for HashString {
+    #[inline]
+    fn from(value: &str) -> Self {
+        Self::from_str(value)
+    }
+}
+
 impl From<String> for HashString {
     #[inline]
     fn from(value: String) -> Self {
