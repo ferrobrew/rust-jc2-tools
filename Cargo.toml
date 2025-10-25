@@ -8,11 +8,11 @@ members = [
 
 [workspace.package]
 authors = ["SK83RJOSH"]
-edition = "2021"
-homepage = "https://github.com/SK83RJOSH/rust-jc2-tools/"
+edition = "2024"
+homepage = "https://github.com/ferrobrew/rust-jc2-tools/"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/SK83RJOSH/rust-jc2-tools/"
-rust-version = "1.77"
+repository = "https://github.com/ferrobrew/rust-jc2-tools/"
+rust-version = "1.85"
 version = "0.1.0"
 
 [workspace.dependencies]
@@ -32,8 +32,8 @@ bevy_panorbit_camera = { version = "0.19", features = ["bevy_egui"] }
 bevy_save = { git = "https://github.com/perry-blueberry/bevy_save", branch = "update-to-bevy-0.14", default-features = false }
 # bevy_save = { version = "0.14", default-features = false }
 bevy-inspector-egui = { version = "0.25" }
-binrw = "0.14"
-bitflags = { version = "2.4", features = ["bytemuck"] }
+binrw = "0.15"
+bitflags = { version = "2.10", features = ["bytemuck"] }
 bytemuck = { version = "1.14", features = ["must_cast"] }
 clap = { version = "4.4", features = ["derive"] }
 const_for = "0.1"
@@ -43,7 +43,7 @@ futures-lite = "2.0"
 gltf = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
 gltf-json = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
 image = { version = "0.25", default-features = false }
-itertools = "0.12"
+itertools = "0.14"
 lexical-sort = "0.3"
 num-traits = "0.2"
 parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
@@ -51,7 +51,7 @@ paste = "1.0"
 rgb = "0.8"
 static_assertions = "1.1"
 texpresso = "2.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 [profile.release]
 codegen-units = 1
@@ -82,6 +82,7 @@ unused_lifetimes = "warn"
 # https://github.com/rust-lang/cargo/issues/13157
 elided_lifetimes_in_paths = "allow" # Allowed for bevy systems
 trivial_casts = "allow" # Allowed since coercions cannot often be inferred (such as Box<Reader>)
+mismatched_lifetime_syntaxes = "allow" # Allow to avoid extremely noisy syntax
 
 [workspace.lints.clippy]
 as_ptr_cast_mut = "warn"
