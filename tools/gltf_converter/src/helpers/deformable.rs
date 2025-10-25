@@ -37,7 +37,7 @@ impl GltfMeshAccessors for DeformableVertex {
             std::mem::offset_of!(LitDeformableVertex, normal),
         ));
         result.push((
-            AccessorType::Vec3,
+            AccessorType::Vec4,
             AccessorComponentType::F32,
             MeshSemantic::Tangents,
             std::mem::offset_of!(LitDeformableVertex, tangent),
@@ -66,7 +66,7 @@ impl GltfMeshAccessors for DeformableVertex {
                 std::mem::offset_of!(LitDeformableVertex, morph_normal),
             ),
             (
-                AccessorType::Vec3,
+                AccessorType::Vec4,
                 AccessorComponentType::F32,
                 MeshSemantic::Tangents,
                 std::mem::offset_of!(LitDeformableVertex, morph_tangent),
@@ -106,7 +106,7 @@ impl GltfMeshAccessors for LitDeformableVertex {
             std::mem::offset_of!(LitDeformableVertex, normal),
         ));
         result.push((
-            AccessorType::Vec3,
+            AccessorType::Vec4,
             AccessorComponentType::F32,
             MeshSemantic::Tangents,
             std::mem::offset_of!(LitDeformableVertex, tangent),
@@ -135,7 +135,7 @@ impl GltfMeshAccessors for LitDeformableVertex {
                 std::mem::offset_of!(LitDeformableVertex, morph_normal),
             ),
             (
-                AccessorType::Vec3,
+                AccessorType::Vec4,
                 AccessorComponentType::F32,
                 MeshSemantic::Tangents,
                 std::mem::offset_of!(LitDeformableVertex, morph_tangent),

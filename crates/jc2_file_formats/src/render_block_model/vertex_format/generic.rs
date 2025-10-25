@@ -10,7 +10,7 @@ pub struct GenericVertex {
     pub morph_position: Vec3<f32>,
     pub morph_normal: Vec3<f32>,
     pub morph_tangent: Vec3<f32>,
-    pub morph_bitangent: Vec3<f32>,
+    pub morph_binormal: Vec3<f32>,
 
     pub uv0: Vec2<f32>,
     pub uv1: Vec2<f32>,

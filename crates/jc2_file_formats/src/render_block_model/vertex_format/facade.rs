@@ -1,12 +1,12 @@
-use binrw::{binrw, BinRead, BinWrite};
+use binrw::{BinRead, BinWrite, binrw};
 
 use crate::{
     math::{
-        ops::{VecCross, VecDot},
         Vec2, Vec3, Vec4,
+        ops::{VecCross, VecDot},
     },
     render_block_model::{
-        PackedNormalF32, PackedPosition, PackedRGBAF32, PackedUVF32, VertexFormat,
+        PackedNormalF32, PackedPosition, PackedRGBAF32, PackedTangentF32, PackedUVF32, VertexFormat,
     },
 };
 
@@ -19,7 +19,7 @@ pub struct FacadeVertex {
     pub uv0: Vec2<f32>,
     pub uv1: Vec2<f32>,
     pub normal: Vec3<f32>,
-    pub tangent: Vec3<f32>,
+    pub tangent: Vec4<f32>,
     pub color: Vec4<f32>,
     pub uv2: Vec2<f32>,
 }
@@ -98,14 +98,13 @@ impl From<GenericVertex> for FacadeVertex {
             .cross(value.tangent)
             .dot(value.binormal)
             .signum();
-        let tangent = value.tangent * sign;
 
         Self {
             position: value.position,
             uv0: value.uv0,
             uv1: value.uv1,
             normal: value.normal,
-            tangent,
+            tangent: value.tangent.extend(sign),
             color: value.diffuse_color,
             uv2: value.uv2,
         }
@@ -116,8 +115,8 @@ impl From<FacadeVertex> for GenericVertex {
     #[inline]
     fn from(value: FacadeVertex) -> Self {
         let normal: Vec3<f32> = value.normal;
-        let tangent: Vec3<f32> = value.tangent;
-        let binormal = normal.cross(tangent);
+        let tangent: Vec3<f32> = value.tangent.into();
+        let binormal = normal.cross(tangent) * value.tangent.w;
 
         Self {
             position: value.position,
@@ -140,7 +139,7 @@ pub struct FacadeVertexF32 {
     pub uv0: Vec2<f32>,
     pub uv1: Vec2<f32>,
     pub normal: PackedNormalF32,
-    pub tangent: PackedNormalF32,
+    pub tangent: PackedTangentF32,
     pub color: PackedRGBAF32,
     pub uv2: PackedUVF32,
 }
@@ -175,7 +174,7 @@ pub struct FacadeVertexI16 {
     pub uv0: Vec2<f32>,
     pub uv1: Vec2<f32>,
     pub normal: PackedNormalF32,
-    pub tangent: PackedNormalF32,
+    pub tangent: PackedTangentF32,
     pub color: PackedRGBAF32,
     pub uv2: PackedUVF32,
 }

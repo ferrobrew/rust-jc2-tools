@@ -1,8 +1,13 @@
-use binrw::{binrw, BinRead, BinWrite};
+use binrw::{BinRead, BinWrite, binrw};
 
 use crate::{
-    math::{Vec2, Vec3},
-    render_block_model::{PackedNormalF32, PackedWeightAndIndex, RenderBlockError},
+    math::{
+        Vec2, Vec3, Vec4,
+        ops::{VecCross, VecDot},
+    },
+    render_block_model::{
+        PackedNormalF32, PackedTangentF32, PackedWeightAndIndex, RenderBlockError,
+    },
 };
 
 use super::{GenericVertex, Vertex, VertexBuffer};
@@ -16,8 +21,8 @@ pub struct DeformableVertex {
     pub bone_indices: [u32; 4],
     pub normal: Vec3<f32>,
     pub morph_normal: Vec3<f32>,
-    pub tangent: Vec3<f32>,
-    pub morph_tangent: Vec3<f32>,
+    pub tangent: Vec4<f32>,
+    pub morph_tangent: Vec4<f32>,
     pub uv0: Vec2<f32>,
 }
 
@@ -82,6 +87,18 @@ impl From<PackedDeformableVertex> for DeformableVertex {
 impl From<GenericVertex> for DeformableVertex {
     #[inline]
     fn from(value: GenericVertex) -> Self {
+        let sign = value
+            .normal
+            .cross(value.tangent)
+            .dot(value.binormal)
+            .signum();
+
+        let morph_sign = value
+            .normal
+            .cross(value.morph_normal)
+            .dot(value.morph_binormal)
+            .signum();
+
         Self {
             position: value.position,
             morph_position: value.morph_position,
@@ -100,8 +117,8 @@ impl From<GenericVertex> for DeformableVertex {
             uv0: value.uv0,
             normal: value.normal,
             morph_normal: value.morph_normal,
-            tangent: value.tangent,
-            morph_tangent: value.morph_tangent,
+            tangent: value.tangent.extend(sign),
+            morph_tangent: value.morph_tangent.extend(morph_sign),
         }
     }
 }
@@ -109,13 +126,23 @@ impl From<GenericVertex> for DeformableVertex {
 impl From<DeformableVertex> for GenericVertex {
     #[inline]
     fn from(value: DeformableVertex) -> Self {
+        let normal: Vec3<f32> = value.normal;
+        let tangent: Vec3<f32> = value.tangent.into();
+        let binormal = normal.cross(tangent) * value.tangent.w;
+
+        let morph_normal: Vec3<f32> = value.morph_normal;
+        let morph_tangent: Vec3<f32> = value.morph_tangent.into();
+        let morph_binormal = normal.cross(tangent) * value.tangent.w;
+
         Self {
             position: value.position,
-            normal: value.normal,
-            tangent: value.tangent,
+            normal,
+            tangent,
+            binormal,
             morph_position: value.morph_position,
-            morph_normal: value.morph_normal,
-            morph_tangent: value.morph_tangent,
+            morph_normal,
+            morph_tangent,
+            morph_binormal,
             uv0: value.uv0,
             bone_weights: [
                 value.bone_weights[0],
@@ -151,8 +178,8 @@ pub struct PackedDeformableVertex {
     pub bone_weights_indices: [PackedWeightAndIndex; 4],
     pub normal: PackedNormalF32,
     pub morph_normal: PackedNormalF32,
-    pub tangent: PackedNormalF32,
-    pub morph_tangent: PackedNormalF32,
+    pub tangent: PackedTangentF32,
+    pub morph_tangent: PackedTangentF32,
     pub uv0: Vec2<f32>,
 }
 
@@ -169,8 +196,8 @@ pub struct LitDeformableVertex {
     pub bone_indices: [u32; 4],
     pub normal: Vec3<f32>,
     pub morph_normal: Vec3<f32>,
-    pub tangent: Vec3<f32>,
-    pub morph_tangent: Vec3<f32>,
+    pub tangent: Vec4<f32>,
+    pub morph_tangent: Vec4<f32>,
     pub uv0: Vec2<f32>,
     pub light: f32,
 }
@@ -309,13 +336,25 @@ impl From<PackedLitDeformableVertex> for LitDeformableVertex {
 impl From<GenericVertex> for LitDeformableVertex {
     #[inline]
     fn from(value: GenericVertex) -> Self {
+        let sign = value
+            .normal
+            .cross(value.tangent)
+            .dot(value.binormal)
+            .signum();
+
+        let morph_sign = value
+            .normal
+            .cross(value.morph_normal)
+            .dot(value.morph_binormal)
+            .signum();
+
         Self {
             position: value.position,
             normal: value.normal,
-            tangent: value.tangent,
+            tangent: value.tangent.extend(sign),
             morph_position: value.morph_position,
             morph_normal: value.morph_normal,
-            morph_tangent: value.morph_tangent,
+            morph_tangent: value.morph_tangent.extend(morph_sign),
             uv0: value.uv0,
             light: value.size,
             bone_weights: [
@@ -337,13 +376,23 @@ impl From<GenericVertex> for LitDeformableVertex {
 impl From<LitDeformableVertex> for GenericVertex {
     #[inline]
     fn from(value: LitDeformableVertex) -> Self {
+        let normal: Vec3<f32> = value.normal;
+        let tangent: Vec3<f32> = value.tangent.into();
+        let binormal = normal.cross(tangent) * value.tangent.w;
+
+        let morph_normal: Vec3<f32> = value.morph_normal;
+        let morph_tangent: Vec3<f32> = value.morph_tangent.into();
+        let morph_binormal = normal.cross(tangent) * value.tangent.w;
+
         Self {
             position: value.position,
-            normal: value.normal,
-            tangent: value.tangent,
+            normal,
+            tangent,
+            binormal,
             morph_position: value.morph_position,
-            morph_normal: value.morph_normal,
-            morph_tangent: value.morph_tangent,
+            morph_normal,
+            morph_tangent,
+            morph_binormal,
             uv0: value.uv0,
             size: value.light,
             bone_weights: [
@@ -381,8 +430,8 @@ pub struct PackedLitDeformableVertex {
     pub light: f32,
     pub normal: PackedNormalF32,
     pub morph_normal: PackedNormalF32,
-    pub tangent: PackedNormalF32,
-    pub morph_tangent: PackedNormalF32,
+    pub tangent: PackedTangentF32,
+    pub morph_tangent: PackedTangentF32,
 }
 
 impl Vertex for PackedLitDeformableVertex {
@@ -449,8 +498,8 @@ pub struct LitDeformableVertexData {
     pub light: f32,
     pub normal: PackedNormalF32,
     pub morph_normal: PackedNormalF32,
-    pub tangent: PackedNormalF32,
-    pub morph_tangent: PackedNormalF32,
+    pub tangent: PackedTangentF32,
+    pub morph_tangent: PackedTangentF32,
 }
 
 impl Vertex for LitDeformableVertexData {

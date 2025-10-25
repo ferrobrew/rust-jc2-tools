@@ -32,7 +32,7 @@ impl GltfMeshAccessors for FacadeVertex {
                 std::mem::offset_of!(FacadeVertex, normal),
             ),
             (
-                AccessorType::Vec3,
+                AccessorType::Vec4,
                 AccessorComponentType::F32,
                 MeshSemantic::Tangents,
                 std::mem::offset_of!(FacadeVertex, tangent),
