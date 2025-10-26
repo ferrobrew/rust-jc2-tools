@@ -161,10 +161,11 @@ impl From<Vec3<f32>> for PackedNormalU32 {
     #[inline]
     fn from(value: Vec3<f32>) -> Self {
         Self({
-            let x = ((((value.x * 127.0) + 128.0) as u32) & 0xFF) << 24;
-            let y = ((((value.y * 127.0) + 128.0) as u32) & 0xFF) << 16;
-            let z = ((((value.z * 127.0) + 128.0) as u32) & 0xFF) << 8;
-            x + y + z + 128u32
+            let x = ((((value.x * 127.0) + 128.0) as u32) & 0xFF) << 0;
+            let y = ((((value.y * 127.0) + 128.0) as u32) & 0xFF) << 8;
+            let z = ((((value.z * 127.0) + 128.0) as u32) & 0xFF) << 16;
+            let w = 128u32 << 24;
+            x + y + z + w
         })
     }
 }
@@ -173,9 +174,9 @@ impl From<PackedNormalU32> for Vec3<f32> {
     #[inline]
     fn from(value: PackedNormalU32) -> Self {
         Self {
-            x: ((((value.0 >> 24) & 0xFF) as f32) - 128.0) / 127.0,
-            y: ((((value.0 >> 16) & 0xFF) as f32) - 128.0) / 127.0,
-            z: ((((value.0 >> 8) & 0xFF) as f32) - 128.0) / 127.0,
+            x: ((((value.0 >> 0) & 0xFF) as f32) - 128.0) / 127.0,
+            y: ((((value.0 >> 8) & 0xFF) as f32) - 128.0) / 127.0,
+            z: ((((value.0 >> 16) & 0xFF) as f32) - 128.0) / 127.0,
         }
     }
 }
