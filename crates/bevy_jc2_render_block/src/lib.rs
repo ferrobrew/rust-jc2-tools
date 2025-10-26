@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use bevy::{
-    asset::{embedded_asset, AssetLoader, AsyncReadExt, LoadContext},
+    asset::{AssetLoader, AsyncReadExt, LoadContext, embedded_asset},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
@@ -16,7 +16,7 @@ use thiserror::Error;
 
 use jc2_file_formats::render_block_model as rbm;
 
-use self::materials::{general::RenderBlockGeneralMaterial, RenderBlockMaterial};
+use self::materials::{RenderBlockMaterial, general::RenderBlockGeneralMaterial};
 
 pub mod materials;
 
@@ -185,7 +185,7 @@ impl AssetLoader for RenderBlockLoader {
                 _ => {
                     return Err(RenderBlockModelError::UnsupportedRenderBlock {
                         block: block.clone(),
-                    })
+                    });
                 }
             }
         }

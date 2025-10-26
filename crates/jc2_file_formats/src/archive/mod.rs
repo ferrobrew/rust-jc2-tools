@@ -3,7 +3,7 @@ use std::{
     io::{Read, Seek, Write},
 };
 
-use binrw::{binrw, parser, writer, BinRead, BinResult, BinWrite};
+use binrw::{BinRead, BinResult, BinWrite, binrw, parser, writer};
 use jc2_hashing::HashString;
 
 use crate::common::LengthString;

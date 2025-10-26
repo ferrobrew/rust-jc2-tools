@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use binrw::{binrw, BinRead, BinWrite};
+use binrw::{BinRead, BinWrite, binrw};
 
 #[binrw]
 #[derive(Clone, Default, Debug, PartialEq, Eq)]

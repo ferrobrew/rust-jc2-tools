@@ -2,7 +2,7 @@ use std::{io::Write, path::PathBuf};
 
 use anyhow::Context;
 use clap::Parser;
-use gltf_json::{buffer::Stride, mesh::MorphTarget, validation::Checked, Index};
+use gltf_json::{Index, buffer::Stride, mesh::MorphTarget, validation::Checked};
 use helpers::GltfMeshAccessor;
 use jc2_file_formats::render_block_model::RenderBlockModel;
 

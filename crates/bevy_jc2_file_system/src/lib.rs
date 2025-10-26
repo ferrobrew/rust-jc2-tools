@@ -1,8 +1,8 @@
 use async_lock::RwLock;
 use bevy::{
     asset::{
-        io::{AssetSource, AssetSourceId},
         AssetLoadFailedEvent,
+        io::{AssetSource, AssetSourceId},
     },
     prelude::*,
     utils::HashMap,
@@ -11,15 +11,15 @@ use jc2_hashing::HashString;
 use std::{
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
 };
 
 mod archive;
 #[cfg(feature = "tree")]
 use archive::ArchivePaths;
-use archive::{archive_type, Archive, ArchiveLoader, ArchiveType};
+use archive::{Archive, ArchiveLoader, ArchiveType, archive_type};
 
 mod asset_reader;
 use asset_reader::FileSystemAssetReader;

@@ -1,8 +1,8 @@
 use binrw::binrw;
 
 use super::{
-    ops::{VecDot, VecLength},
     VecType, VecTypeFloat,
+    ops::{VecDot, VecLength},
 };
 
 #[binrw]

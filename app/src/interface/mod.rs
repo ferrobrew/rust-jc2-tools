@@ -2,12 +2,12 @@ use bevy::prelude::*;
 use bevy_egui::EguiSet;
 use bevy_file_dialog::FileDialogPlugin;
 use bevy_inspector_egui::quick::AssetInspectorPlugin;
-use bevy_jc2_render_block::{materials::general::RenderBlockGeneralMaterial, RenderBlockMesh};
+use bevy_jc2_render_block::{RenderBlockMesh, materials::general::RenderBlockGeneralMaterial};
 
 use crate::utilities::content::{ContentDirectory, ContentState};
 
 use self::{
-    file_tree::{draw_file_tree, process_file_tree, FileTreeEvent},
+    file_tree::{FileTreeEvent, draw_file_tree, process_file_tree},
     title_bar::draw_title_bar,
 };
 

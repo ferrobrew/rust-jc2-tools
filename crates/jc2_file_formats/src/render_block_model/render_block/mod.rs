@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use binrw::{binrw, BinRead, BinWrite};
+use binrw::{BinRead, BinWrite, binrw};
 
 use super::RenderBlockError;
 

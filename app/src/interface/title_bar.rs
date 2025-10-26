@@ -1,5 +1,5 @@
 use bevy::{pbr::wireframe::WireframeConfig, prelude::*, winit::WinitWindows};
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 use bevy_file_dialog::FileDialogExt;
 use bevy_jc2_render_block::RenderBlockMesh;
 

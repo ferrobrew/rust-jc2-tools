@@ -2,8 +2,8 @@ use std::io::{Read, Seek};
 
 use clap::Parser;
 use jc2_file_formats::{
-    property_container::{PropertyBlockFile, PropertyContainer, PropertyFile},
     BinRead,
+    property_container::{PropertyBlockFile, PropertyContainer, PropertyFile},
 };
 
 #[derive(Parser)]

@@ -3,7 +3,7 @@ use std::io::{Read, Seek, Write};
 use thiserror::Error;
 
 use crate::math::Vec3;
-use binrw::{binrw, BinRead, BinWrite};
+use binrw::{BinRead, BinWrite, binrw};
 
 mod render_block;
 pub use render_block::*;

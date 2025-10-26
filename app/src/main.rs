@@ -1,5 +1,5 @@
 use bevy::{
-    pbr::{wireframe::WireframePlugin, CascadeShadowConfigBuilder},
+    pbr::{CascadeShadowConfigBuilder, wireframe::WireframePlugin},
     prelude::*,
 };
 use bevy_egui::EguiPlugin;

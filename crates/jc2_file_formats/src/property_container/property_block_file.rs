@@ -1,12 +1,12 @@
 use std::ops::{Deref, DerefMut};
 
-use binrw::{binrw, BinRead, BinWrite};
+use binrw::{BinRead, BinWrite, binrw};
 use jc2_hashing::HashString;
 
 use crate::{
+    BinReadWrite,
     common::{LengthVec, NullString},
     math::{Vec2, Vec3, Vec4},
-    BinReadWrite,
 };
 
 use super::PropertyValue;

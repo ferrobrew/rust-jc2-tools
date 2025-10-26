@@ -3,8 +3,8 @@ use std::ops::{Add, Div, Mul, Sub};
 use binrw::binrw;
 
 use super::{
-    ops::{VecCross, VecDot, VecLength},
     Vec4, VecType, VecTypeFloat,
+    ops::{VecCross, VecDot, VecLength},
 };
 
 #[binrw]

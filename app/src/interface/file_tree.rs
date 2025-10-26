@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 use bevy_jc2_file_system::{FileSystemMounts, FileSystemTreeIterValue};
 
 use crate::utilities::model::{TargetArchive, TargetDirectory, TargetModel};

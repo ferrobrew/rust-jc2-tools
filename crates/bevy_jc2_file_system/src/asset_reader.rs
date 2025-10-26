@@ -1,19 +1,19 @@
 use std::{
     path::{Path, PathBuf},
     pin::Pin,
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     task::Poll,
 };
 
-use async_fs::{read_dir, File};
+use async_fs::{File, read_dir};
 use bevy::asset::io::{AssetReader, AssetReaderError, ErasedAssetReader, PathStream, Reader};
 use futures_io::{AsyncRead, AsyncSeek, SeekFrom};
-use futures_lite::{future::yield_now, io::Cursor, AsyncReadExt, AsyncSeekExt, Stream, StreamExt};
+use futures_lite::{AsyncReadExt, AsyncSeekExt, Stream, StreamExt, future::yield_now, io::Cursor};
 use jc2_hashing::HashString;
 
 use crate::{
-    archive::{archive_type, ArchiveEntry, ArchiveType},
     FileSystemMountsData,
+    archive::{ArchiveEntry, ArchiveType, archive_type},
 };
 
 pub(crate) struct FileSystemAssetReader {

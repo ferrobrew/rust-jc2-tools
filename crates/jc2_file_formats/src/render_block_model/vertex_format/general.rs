@@ -1,9 +1,9 @@
-use binrw::{binrw, BinRead, BinWrite};
+use binrw::{BinRead, BinWrite, binrw};
 
 use crate::{
     math::{
-        ops::{VecCross, VecDot},
         Vec2, Vec3, Vec4,
+        ops::{VecCross, VecDot},
     },
     render_block_model::{
         PackedNormalF32, PackedPosition, PackedRGBAF32, PackedTangentF32, PackedUVI16, VertexFormat,
