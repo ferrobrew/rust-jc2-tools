@@ -41,6 +41,9 @@ pub enum LengthError {
     InvalidLength,
 }
 
+mod bitvec;
+pub use bitvec::*;
+
 mod string;
 pub use string::*;
 

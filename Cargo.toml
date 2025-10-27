@@ -36,6 +36,7 @@ bevy_save = { git = "https://github.com/perry-blueberry/bevy_save", branch = "up
 bevy-inspector-egui = { version = "0.25" }
 binrw = "0.15"
 bitflags = { version = "2.10", features = ["bytemuck"] }
+bitvec = { version = "1.0" }
 bytemuck = { version = "1.14", features = ["must_cast"] }
 clap = { version = "4.4", features = ["derive"] }
 const_for = "0.1"
