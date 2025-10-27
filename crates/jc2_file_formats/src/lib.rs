@@ -9,3 +9,4 @@ pub mod common;
 pub mod math;
 pub mod property_container;
 pub mod render_block_model;
+pub mod terrain;

@@ -1,0 +1,20 @@
+[package]
+name = "terrain"
+authors.workspace = true
+description = "Just Cause 2 Terrain Tool"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+jc2_file_formats.workspace = true
+
+anyhow.workspace = true
+clap.workspace = true
