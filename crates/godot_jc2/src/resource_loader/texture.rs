@@ -3,9 +3,7 @@ use godot::{
     prelude::*,
 };
 
-use crate::resource_loader::JcResourceThread;
-
-use super::{GodotError, JcResourceError, JcResourceResult};
+use super::{GodotError, JcResourceError, JcResourceResult, JcResourceThread};
 
 pub const EXTENSION: &str = "dds";
 
