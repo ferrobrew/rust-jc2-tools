@@ -12,6 +12,7 @@ use thiserror::Error;
 
 mod mesh_builder;
 mod model;
+mod terrain;
 mod texture;
 
 #[derive(GodotClass)]
@@ -55,7 +56,6 @@ impl JcResourceLoader {
     }
 
     fn receive(&mut self, event: JcResourceEvent) {
-        godot_print!("JcResourceLoader: received {event:?}");
         match event {
             JcResourceEvent::ResourceLoaded(path, resource) => {
                 self.signals().resource_loaded().emit(&path, &resource.0);
@@ -112,8 +112,8 @@ struct JcResourceChannel {
 
 impl JcResourceChannel {
     pub fn new(mut owner: Gd<JcResourceLoader>) -> Option<Self> {
-        let (task_sender, task_receiver) = async_channel::bounded(128);
-        let (result_sender, result_receiver) = async_channel::bounded(128);
+        let (task_sender, task_receiver) = async_channel::bounded(64 * 64 * 2);
+        let (result_sender, result_receiver) = async_channel::bounded(64 * 64 * 2);
 
         let Some(thread) = JcResourceThread::spawn(task_receiver, result_sender) else {
             godot_error!("JcResourceChannel: failed to spawn thread");
@@ -182,12 +182,16 @@ impl JcResourceThread {
                     events: Default::default(),
                     resource_loaders: HashMap::from([
                         (
-                            GString::from(texture::EXTENSION),
-                            texture::load as JcResourceFormatLoader,
-                        ),
-                        (
                             GString::from(model::EXTENSION),
                             model::load as JcResourceFormatLoader,
+                        ),
+                        (
+                            GString::from(terrain::EXTENSION),
+                            terrain::load as JcResourceFormatLoader,
+                        ),
+                        (
+                            GString::from(texture::EXTENSION),
+                            texture::load as JcResourceFormatLoader,
                         ),
                     ]),
                 }
