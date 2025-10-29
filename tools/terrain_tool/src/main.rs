@@ -35,6 +35,13 @@ fn main() -> anyhow::Result<()> {
             args.file.with_extension("minimap.dds"),
             terrain.textures.map_tile,
         )?;
+
+        let height_map: Vec<u8> = terrain
+            .height_map
+            .iter()
+            .flat_map(|x| x.to_le_bytes())
+            .collect();
+        std::fs::write(args.file.with_extension("height.raw"), &height_map)?;
     }
 
     Ok(())
