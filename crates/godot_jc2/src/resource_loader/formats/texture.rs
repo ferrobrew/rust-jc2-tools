@@ -3,31 +3,32 @@ use godot::{
     prelude::*,
 };
 
-use super::{
-    GodotError, JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread,
-};
+use super::{GodotError, JcResourceFormat, JcResourceError, JcResourceResult, JcResourceThread};
 
-pub fn register() -> JcResourceFormat {
-    (GString::from("dds"), load)
-}
+pub struct JcTexture();
 
-pub fn load(
-    path: GString,
-    buffer: PackedByteArray,
-    _thread: &mut JcResourceThread,
-) -> JcResourceResult<Gd<Object>> {
-    let mut image = Image::new_gd();
-    let error = image.load_dds_from_buffer(&buffer);
-    if error != GodotError::OK {
-        return Err(JcResourceError::FileAccess { path, error });
+impl JcResourceFormat for JcTexture {
+    const EXTENSION: &str = "dds";
+    type Result = ImageTexture;
+
+    fn from_buffer(
+        path: GString,
+        buffer: PackedByteArray,
+        _thread: &mut JcResourceThread,
+    ) -> JcResourceResult<Gd<ImageTexture>> {
+        let mut image = Image::new_gd();
+        let error = image.load_dds_from_buffer(&buffer);
+        if error != GodotError::OK {
+            return Err(JcResourceError::FileAccess { path, error });
+        }
+
+        let Some(texture) = ImageTexture::create_from_image(&image) else {
+            return Err(JcResourceError::FileAccess {
+                path,
+                error: GodotError::FAILED,
+            });
+        };
+
+        Ok(texture)
     }
-
-    let Some(texture) = ImageTexture::create_from_image(&image) else {
-        return Err(JcResourceError::FileAccess {
-            path,
-            error: GodotError::FAILED,
-        });
-    };
-
-    Ok(texture.upcast::<Object>())
 }

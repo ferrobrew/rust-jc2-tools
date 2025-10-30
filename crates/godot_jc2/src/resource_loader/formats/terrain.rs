@@ -12,95 +12,97 @@ use godot::{
 use godot_utils::mesh_builder::MeshBuilder;
 use jc2_file_formats::terrain::{TerrainChunk, TerrainFile};
 
-use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, texture};
+use super::{JcResourceFormat, JcResourceError, JcResourceResult, JcResourceThread, JcTexture};
 
-pub fn register() -> JcResourceFormat {
-    (GString::from("dat"), load)
-}
+pub struct JcTerrain();
 
-pub fn load(
-    path: GString,
-    buffer: PackedByteArray,
-    thread: &mut JcResourceThread,
-) -> JcResourceResult<Gd<Object>> {
-    let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
-    match TerrainFile::read_le(&mut cursor) {
-        Ok(chunk) => {
-            let map_tile = texture(&path, &chunk.textures.map_tile, thread)?;
+impl JcResourceFormat for JcTerrain {
+    const EXTENSION: &str = "dat";
+    type Result = MeshInstance3D;
 
-            let mesh = TerrainChunkMesh::new(
-                {
-                    let parts = path.split("_");
-                    let length = parts.len();
-                    Vector2i::new(
-                        parts[length - 2].to_int() as i32,
-                        parts[length - 1].to_int() as i32,
-                    )
-                },
-                &chunk.lods.high[0],
-            );
+    fn from_buffer(
+        path: GString,
+        buffer: PackedByteArray,
+        thread: &mut JcResourceThread,
+    ) -> JcResourceResult<Gd<Self::Result>> {
+        let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
+        match TerrainFile::read_le(&mut cursor) {
+            Ok(chunk) => {
+                let map_tile = texture(&path, &chunk.textures.map_tile, thread)?;
 
-            let mesh = MeshBuilder::new()
-                .surface(|surface| {
-                    let mut material = StandardMaterial3D::new_gd();
+                let mesh = TerrainChunkMesh::new(
+                    {
+                        let parts = path.split("_");
+                        let length = parts.len();
+                        Vector2i::new(
+                            parts[length - 2].to_int() as i32,
+                            parts[length - 1].to_int() as i32,
+                        )
+                    },
+                    &chunk.lods.high[0],
+                );
 
-                    material.set_flag(Flags::USE_TEXTURE_REPEAT, false);
-                    material.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS_ANISOTROPIC);
-                    material.set_texture(TextureParam::ALBEDO, &map_tile);
+                let mesh = MeshBuilder::new()
+                    .surface(|surface| {
+                        let mut material = StandardMaterial3D::new_gd();
 
-                    let vertices: PackedVector3Array = mesh
-                        .vertices()
-                        .iter()
-                        .map(|vertex| {
-                            const WIDTH_SCALE: f32 = (1.0 / 64.0) * 512.0;
-                            const HEIGHT_SCALE: f32 = (1.0 / u16::MAX as f32) * 2200.0;
+                        material.set_flag(Flags::USE_TEXTURE_REPEAT, false);
+                        material.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS_ANISOTROPIC);
+                        material.set_texture(TextureParam::ALBEDO, &map_tile);
 
-                            let [x, z] = vertex.position;
-                            let height_map = |x| x as usize * 2;
-                            let y = chunk.height_map[height_map(x) + height_map(z) * 132];
+                        let vertices: PackedVector3Array = mesh
+                            .vertices()
+                            .iter()
+                            .map(|vertex| {
+                                const WIDTH_SCALE: f32 = (1.0 / 64.0) * 512.0;
+                                const HEIGHT_SCALE: f32 = (1.0 / u16::MAX as f32) * 2200.0;
 
-                            Vector3 {
-                                x: x as f32 * WIDTH_SCALE,
-                                y: y as f32 * HEIGHT_SCALE,
-                                z: z as f32 * WIDTH_SCALE,
-                            }
-                        })
-                        .collect();
+                                let [x, z] = vertex.position;
+                                let height_map = |x| x as usize * 2;
+                                let y = chunk.height_map[height_map(x) + height_map(z) * 132];
 
-                    let uv1: PackedVector2Array = mesh
-                        .vertices()
-                        .iter()
-                        .map(|vertex| {
-                            const INVERSE_DIVISIONS: f32 = 1.0 / MAX_DIVISIONS as f32;
-                            Vector2 {
-                                x: vertex.position[0] as f32 * INVERSE_DIVISIONS,
-                                y: vertex.position[1] as f32 * INVERSE_DIVISIONS,
-                            }
-                        })
-                        .collect();
+                                Vector3 {
+                                    x: x as f32 * WIDTH_SCALE,
+                                    y: y as f32 * HEIGHT_SCALE,
+                                    z: z as f32 * WIDTH_SCALE,
+                                }
+                            })
+                            .collect();
 
-                    let indices: PackedInt32Array = mesh
-                        .indices()
-                        .iter()
-                        .flat_map(|indices| indices.iter().rev())
-                        .map(|&index| index as i32)
-                        .collect();
+                        let uv1: PackedVector2Array = mesh
+                            .vertices()
+                            .iter()
+                            .map(|vertex| {
+                                const INVERSE_DIVISIONS: f32 = 1.0 / MAX_DIVISIONS as f32;
+                                Vector2 {
+                                    x: vertex.position[0] as f32 * INVERSE_DIVISIONS,
+                                    y: vertex.position[1] as f32 * INVERSE_DIVISIONS,
+                                }
+                            })
+                            .collect();
 
-                    surface
-                        .primitive_type(PrimitiveType::TRIANGLES)
-                        .material(material)
-                        .vertices(vertices)
-                        .uv1(uv1)
-                        .indices(indices)
-                })
-                .build();
+                        let indices: PackedInt32Array = mesh
+                            .indices()
+                            .iter()
+                            .flat_map(|indices| indices.iter().rev())
+                            .map(|&index| index as i32)
+                            .collect();
 
-            let mut instance = MeshInstance3D::new_alloc();
-            instance.set_mesh(&mesh);
+                        surface
+                            .primitive_type(PrimitiveType::TRIANGLES)
+                            .material(material)
+                            .vertices(vertices)
+                            .uv1(uv1)
+                            .indices(indices)
+                    })
+                    .build();
 
-            Ok(instance.upcast::<Object>())
+                let mut instance = MeshInstance3D::new_alloc();
+                instance.set_mesh(&mesh);
+                Ok(instance)
+            }
+            Err(error) => Err(JcResourceError::Binrw { path, error }),
         }
-        Err(error) => Err(JcResourceError::Binrw { path, error }),
     }
 }
 
@@ -109,8 +111,8 @@ fn texture(
     buffer: &[u8],
     thread: &mut JcResourceThread,
 ) -> JcResourceResult<Gd<Texture2D>> {
-    let result = texture::load(path.clone(), PackedByteArray::from(buffer), thread)?;
-    Ok(result.cast::<Texture2D>())
+    let result = JcTexture::from_buffer(path.clone(), PackedByteArray::from(buffer), thread)?;
+    Ok(result.upcast::<Texture2D>())
 }
 
 pub const MAX_DIVISIONS: usize = 64;

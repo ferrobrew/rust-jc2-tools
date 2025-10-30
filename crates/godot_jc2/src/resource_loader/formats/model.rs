@@ -21,35 +21,37 @@ use jc2_file_formats::{
     },
 };
 
-use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, texture};
+use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, JcTexture};
 
-pub fn register() -> JcResourceFormat {
-    (GString::from("rbm"), load)
-}
+pub struct JcModel();
 
-pub fn load(
-    path: GString,
-    buffer: PackedByteArray,
-    thread: &mut JcResourceThread,
-) -> JcResourceResult<Gd<Object>> {
-    let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
-    match RenderBlockModel::read(&mut cursor) {
-        Ok(rbm) => {
-            let mut mesh = MeshBuilder::new();
-            for block in rbm.blocks.iter() {
-                let primitive_type = block.primitive_type();
-                let material = block.material(thread)?;
-                mesh = mesh.surface(|surface| {
-                    block.surface(surface.primitive_type(primitive_type).material(material))
-                });
+impl JcResourceFormat for JcModel {
+    const EXTENSION: &str = "rbm";
+    type Result = MeshInstance3D;
+
+    fn from_buffer(
+        path: GString,
+        buffer: PackedByteArray,
+        thread: &mut JcResourceThread,
+    ) -> JcResourceResult<Gd<Self::Result>> {
+        let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
+        match RenderBlockModel::read(&mut cursor) {
+            Ok(rbm) => {
+                let mut mesh = MeshBuilder::new();
+                for block in rbm.blocks.iter() {
+                    let primitive_type = block.primitive_type();
+                    let material = block.material(thread)?;
+                    mesh = mesh.surface(|surface| {
+                        block.surface(surface.primitive_type(primitive_type).material(material))
+                    });
+                }
+
+                let mut instance = MeshInstance3D::new_alloc();
+                instance.set_mesh(&mesh.build());
+                Ok(instance)
             }
-
-            let mut instance = MeshInstance3D::new_alloc();
-            instance.set_mesh(&mesh.build());
-
-            Ok(instance.upcast::<Object>())
+            Err(error) => Err(JcResourceError::Binrw { path, error }),
         }
-        Err(error) => Err(JcResourceError::Binrw { path, error }),
     }
 }
 
@@ -600,8 +602,8 @@ fn create_material(
     material: &Material,
 ) -> JcResourceResult<Gd<StandardMaterial3D>> {
     let (albedo, normal) = (
-        load_texture(thread, &material.textures[0])?,
-        load_texture(thread, &material.textures[1])?,
+        texture(&material.textures[0], thread)?,
+        texture(&material.textures[1], thread)?,
     );
 
     let mut material = StandardMaterial3D::new_gd();
@@ -611,8 +613,7 @@ fn create_material(
     Ok(material)
 }
 
-fn load_texture(thread: &mut JcResourceThread, path: &str) -> JcResourceResult<Gd<Texture2D>> {
+fn texture(path: &str, thread: &mut JcResourceThread) -> JcResourceResult<Gd<Texture2D>> {
     let path = path.to_godot();
-    let buffer = thread.get_buffer(&path)?;
-    Ok(texture::load(path, buffer, thread)?.cast::<Texture2D>())
+    Ok(JcTexture::from_path(path, thread)?.upcast::<Texture2D>())
 }

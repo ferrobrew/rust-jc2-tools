@@ -401,7 +401,7 @@ impl JcResourceThread {
 
     fn create_resource(&mut self, path: GString) -> JcResourceResult<Gd<Object>> {
         let extension = path.get_extension().to_lower();
-        let Some(loader) = self.formats.get(&extension) else {
+        let Some(load_format) = self.formats.get(&extension) else {
             return Err(JcResourceError::FileAccess {
                 path,
                 error: GodotError::ERR_INVALID_PARAMETER,
@@ -409,7 +409,7 @@ impl JcResourceThread {
         };
 
         let buffer = self.get_buffer(&path)?;
-        loader(path, buffer, self)
+        load_format(path, buffer, self)
     }
 
     fn get_buffer(&self, path: &GString) -> JcResourceResult<PackedByteArray> {
