@@ -9,10 +9,22 @@ use super::{
     PropertyFile, PropertyFileSection, PropertyFileValue,
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct PropertyContainer(HashMap<HashString, PropertyEntry>);
 
 impl PropertyContainer {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn insert(&mut self, hash: impl Into<HashString>, value: impl Into<PropertyEntry>) {
+        self.0.insert(hash.into(), value.into());
+    }
+
+    pub fn get(&self, hash: impl Into<HashString>) -> Option<&PropertyEntry> {
+        self.0.get(&hash.into())
+    }
+
     pub fn insert_container(
         &mut self,
         hash: impl Into<HashString>,
@@ -98,6 +110,12 @@ type FilterMapIter<'a, K, V, R> = std::iter::FilterMap<
     fn((&'a K, &'a V)) -> Option<(&'a K, R)>,
 >;
 type FilterPropertyContainerIter<'a, T> = FilterMapIter<'a, HashString, PropertyEntry, T>;
+
+impl<T: Sized + Into<HashMap<HashString, PropertyEntry>>> From<T> for PropertyContainer {
+    fn from(value: T) -> Self {
+        Self(value.into())
+    }
+}
 
 impl From<PropertyBlockFile> for PropertyContainer {
     fn from(value: PropertyBlockFile) -> Self {
@@ -325,6 +343,12 @@ where
     Self: Sized,
 {
     fn from_property_value(value: &'a PropertyValue) -> Option<Self>;
+}
+
+impl FromPropertyValue<'_> for PropertyValue {
+    fn from_property_value(value: &'_ PropertyValue) -> Option<Self> {
+        Some(value.clone())
+    }
 }
 
 impl FromPropertyValue<'_> for i32 {
