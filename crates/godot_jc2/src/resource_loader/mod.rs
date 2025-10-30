@@ -10,16 +10,15 @@ use jc2_file_formats::archive::{ArchiveTable, StreamArchive};
 use jc2_hashing::HashString;
 use thiserror::Error;
 
-mod mesh_builder;
-mod model;
-mod terrain;
-mod texture;
+mod formats;
+use formats::JcResourceFormats;
 
 #[derive(GodotClass)]
 #[class(init, base=Object)]
 pub struct JcResourceLoader {
     base: Base<Object>,
     channel: Option<JcResourceChannel>,
+    callbacks: HashMap<GString, Vec<Callable>>,
 }
 
 #[godot_api]
@@ -44,23 +43,53 @@ impl JcResourceLoader {
         singleton.free();
     }
 
-    fn send(&self, task: JcResourceTask) {
+    fn send(&self, task: JcResourceTask) -> bool {
         let result = match &self.channel {
             Some(channel) => channel.sender.send_blocking(task),
             None => Err(async_channel::SendError(task)),
         };
 
-        if let Err(task) = result {
+        if let Err(task) = &result {
             godot_error!("{}: failed to send task {task:?}", Self::NAME);
         }
+
+        result.is_ok()
     }
 
     fn receive(&mut self, event: JcResourceEvent) {
         match event {
             JcResourceEvent::ResourceLoaded(path, resource) => {
-                self.signals().resource_loaded().emit(&path, &resource.0);
+                if let Some(callbacks) = self.callbacks.remove(&path) {
+                    let args = [path.to_variant(), resource.0.to_variant()];
+                    for callback in callbacks {
+                        callback.call(&args);
+                    }
+                } else if !resource.0.instance_id().is_ref_counted() {
+                    resource.0.free();
+                }
             }
-            _ => {}
+            JcResourceEvent::ResourceError(path, error) => {
+                self.callbacks.remove(&path);
+                godot_error!("{}: failed to load resource ({error}) {path}", Self::NAME);
+            }
+            JcResourceEvent::DirectoryMounted(path) => {
+                godot_print!("{}: Directory mounted {path}", Self::NAME);
+            }
+            JcResourceEvent::DirectoryUnmounted(path) => {
+                godot_print!("{}: Directory unmounted {path}", Self::NAME);
+            }
+            JcResourceEvent::ArchiveMounted(path) => {
+                godot_print!("{}: Archive mounted {path}", Self::NAME);
+            }
+            JcResourceEvent::ArchiveUnmounted(path) => {
+                godot_print!("{}: Archive unmounted {path}", Self::NAME);
+            }
+            JcResourceEvent::StreamArchiveMounted(path) => {
+                godot_print!("{}: Stream archive mounted {path}", Self::NAME);
+            }
+            JcResourceEvent::StreamArchiveUnmounted(path) => {
+                godot_print!("{}: Stream archive unmounted {path}", Self::NAME);
+            }
         }
     }
 
@@ -85,12 +114,15 @@ impl JcResourceLoader {
     }
 
     #[func]
-    pub fn load_resource(&mut self, path: GString) {
-        self.send(JcResourceTask::LoadResource(path));
+    pub fn load_resource(&mut self, path: GString, callback: Callable) {
+        if self.send(JcResourceTask::LoadResource(path.clone())) {
+            if let Some(callbacks) = self.callbacks.get_mut(&path) {
+                callbacks.push(callback);
+            } else {
+                self.callbacks.insert(path, vec![callback]);
+            }
+        }
     }
-
-    #[signal]
-    fn resource_loaded(path: GString, resource: Gd<Resource>);
 }
 
 #[godot_api]
@@ -160,13 +192,9 @@ struct JcResourceThread {
     directory: GString,
     archives: Vec<(ArchiveTable, Gd<FileAccess>)>,
     stream_archives: Vec<(StreamArchive, GString)>,
-    resource_loaders: HashMap<GString, JcResourceFormatLoader>,
+    formats: JcResourceFormats,
     events: Vec<JcResourceEvent>,
 }
-
-// TODO: remove me!
-type JcResourceFormatLoader =
-    fn(GString, PackedByteArray, &mut JcResourceThread) -> JcResourceResult<Gd<Resource>>;
 
 impl JcResourceThread {
     pub fn spawn(
@@ -180,20 +208,7 @@ impl JcResourceThread {
                     archives: Default::default(),
                     stream_archives: Default::default(),
                     events: Default::default(),
-                    resource_loaders: HashMap::from([
-                        (
-                            GString::from(model::EXTENSION),
-                            model::load as JcResourceFormatLoader,
-                        ),
-                        (
-                            GString::from(terrain::EXTENSION),
-                            terrain::load as JcResourceFormatLoader,
-                        ),
-                        (
-                            GString::from(texture::EXTENSION),
-                            texture::load as JcResourceFormatLoader,
-                        ),
-                    ]),
+                    formats: formats::register(),
                 }
                 .run(receiver, sender);
             })
@@ -314,9 +329,11 @@ impl JcResourceThread {
     }
 
     fn load_resource(&mut self, path: GString) -> JcResourceResult<()> {
-        let resource = self.create_resource(path.clone())?;
-        self.events
-            .push(JcResourceEvent::ResourceLoaded(path, JcResource(resource)));
+        let event = match self.create_resource(path.clone()) {
+            Ok(resource) => JcResourceEvent::ResourceLoaded(path, JcResource(resource)),
+            Err(error) => JcResourceEvent::ResourceError(path, error),
+        };
+        self.events.push(event);
         Ok(())
     }
 
@@ -382,10 +399,9 @@ impl JcResourceThread {
         }
     }
 
-    // TODO: make private
-    pub fn create_resource(&mut self, path: GString) -> JcResourceResult<Gd<Resource>> {
+    fn create_resource(&mut self, path: GString) -> JcResourceResult<Gd<Object>> {
         let extension = path.get_extension().to_lower();
-        let Some(loader) = self.resource_loaders.get(&extension) else {
+        let Some(loader) = self.formats.get(&extension) else {
             return Err(JcResourceError::FileAccess {
                 path,
                 error: GodotError::ERR_INVALID_PARAMETER,
@@ -465,13 +481,14 @@ enum JcResourceEvent {
     StreamArchiveMounted(GString),
     StreamArchiveUnmounted(GString),
     ResourceLoaded(GString, JcResource),
+    ResourceError(GString, JcResourceError),
 }
 
 #[derive(Debug)]
-struct JcResource(Gd<Resource>);
+struct JcResource(Gd<Object>);
 
-impl From<Gd<Resource>> for JcResource {
-    fn from(value: Gd<Resource>) -> Self {
+impl From<Gd<Object>> for JcResource {
+    fn from(value: Gd<Object>) -> Self {
         Self(value)
     }
 }

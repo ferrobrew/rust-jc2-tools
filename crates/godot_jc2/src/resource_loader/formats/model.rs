@@ -1,11 +1,12 @@
 use godot::{
     classes::{
-        StandardMaterial3D, Texture2D,
+        MeshInstance3D, StandardMaterial3D, Texture2D,
         base_material_3d::{Feature, Flags, TextureParam},
         mesh::PrimitiveType,
     },
     prelude::*,
 };
+use godot_utils::mesh_builder::{MeshBuilder, MeshSurfaceBuilder};
 use jc2_file_formats::{
     math::{
         Vec2, Vec3, Vec4,
@@ -20,33 +21,17 @@ use jc2_file_formats::{
     },
 };
 
-use crate::resource_loader::{
-    JcResourceThread,
-    mesh_builder::{MeshBuilder, MeshSurfaceBuilder},
-};
+use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread};
 
-use super::{JcResourceError, JcResourceResult};
+pub fn register() -> JcResourceFormat {
+    (GString::from("rbm"), load)
+}
 
-pub const EXTENSION: &str = "rbm";
-
-// NOTE:
-// .lod files are only valid if they contain >= 6 lines
-// The first five lines are the rbm paths, some paths may be duplicates (ie/ same model, multiple levels), or be empty (filename is '-', empty model used)
-// The next line is the lod factor as an f32, -1.0 means "fov factor only" (which is stupid... why not use 1.0), factor = fov_factor * lod_factor * global_lod_factor
-// The default_fov is 46.8deg vertical FOV, and fov_factor = max(tan(default_fov * 0.5) / tan(fov * 0.5), 1.0)
-// The lod distances are 0-10, 10-25, 25-50, 50-100, 100-500 meters, these are scaled by the final lod factor
-
-// TODO: we actually need to allow assets like .lod / .rbm to produce *multiple* child assets
-// ie/ an RBM needs to load textures, lods need to load multiple RBMs
-// it would be very inefficient to ping-pong between this <-> the main thread
-// *so* these functions should probably receive &mut ResourceLoader
-// *and* the resource loader likely should implement resource caching/pruning
-// *and* the resource loader should emit events for *all* loaded resources in a bundle
 pub fn load(
     path: GString,
     buffer: PackedByteArray,
     thread: &mut JcResourceThread,
-) -> JcResourceResult<Gd<Resource>> {
+) -> JcResourceResult<Gd<Object>> {
     let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
     match RenderBlockModel::read(&mut cursor) {
         Ok(rbm) => {
@@ -58,7 +43,11 @@ pub fn load(
                     block.surface(surface.primitive_type(primitive_type).material(material))
                 });
             }
-            Ok(mesh.build().upcast::<Resource>())
+
+            let mut instance = MeshInstance3D::new_alloc();
+            instance.set_mesh(&mesh.build());
+
+            Ok(instance.upcast::<Object>())
         }
         Err(error) => Err(JcResourceError::Binrw { path, error }),
     }
@@ -186,6 +175,23 @@ impl SurfaceBuilder for CarPaintRenderBlock {
             .tangents(tangents)
             .uv1(uv1)
             .indices(indices)
+
+        // TODO: cannot be used in tandem with render blocks that don't also implement blend shapes... use custom data?
+        // .blend_shape(|blend_shape| {
+        //     let vertices: PackedVector3Array =
+        //         self.vertices.iter().collect_godot(|v| v.morph_position);
+        //     let normals: PackedVector3Array =
+        //         self.vertices.iter().collect_godot(|v| v.morph_normal);
+        //     let tangents: PackedFloat32Array = self
+        //         .vertices
+        //         .iter()
+        //         .flat_map(|v| <[f32; 4]>::from(v.tangent))
+        //         .collect();
+        //     blend_shape
+        //         .vertices(vertices)
+        //         .normals(normals)
+        //         .tangents(tangents)
+        // })
     }
 }
 
@@ -240,6 +246,23 @@ impl SurfaceBuilder for DeformableWindowRenderBlock {
             .tangents(tangents)
             .uv1(uv1)
             .indices(indices)
+
+        // TODO: cannot be used in tandem with render blocks that don't also implement blend shapes... use custom data?
+        // .blend_shape(|blend_shape| {
+        //     let vertices: PackedVector3Array =
+        //         self.vertices.iter().collect_godot(|v| v.morph_position);
+        //     let normals: PackedVector3Array =
+        //         self.vertices.iter().collect_godot(|v| v.morph_normal);
+        //     let tangents: PackedFloat32Array = self
+        //         .vertices
+        //         .iter()
+        //         .flat_map(|v| <[f32; 4]>::from(v.tangent))
+        //         .collect();
+        //     blend_shape
+        //         .vertices(vertices)
+        //         .normals(normals)
+        //         .tangents(tangents)
+        // })
     }
 }
 

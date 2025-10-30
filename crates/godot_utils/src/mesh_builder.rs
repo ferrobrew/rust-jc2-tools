@@ -94,8 +94,42 @@ impl MeshSurfaceBuilder {
         self.set(MeshArrayType::TEX_UV2, values.to_array())
     }
 
+    pub fn custom0<T: MeshArray + MeshCustomArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::CUSTOM0, values.to_array())
+    }
+
+    pub fn custom1<T: MeshArray + MeshCustomArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::CUSTOM1, values.to_array())
+    }
+
+    pub fn custom2<T: MeshArray + MeshCustomArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::CUSTOM2, values.to_array())
+    }
+
+    pub fn custom3<T: MeshArray + MeshCustomArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::CUSTOM3, values.to_array())
+    }
+
+    pub fn bones<T: MeshArray + MeshCustomArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::BONES, values.to_array())
+    }
+
+    pub fn weights<T: MeshArray + MeshWeightArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::WEIGHTS, values.to_array())
+    }
+
     pub fn indices<T: MeshArray + MeshIndexArray>(self, values: T) -> Self {
         self.set(MeshArrayType::INDEX, values.to_array())
+    }
+
+    pub fn blend_shape(
+        self,
+        f: impl FnOnce(MeshBlendShapeBuilder) -> MeshBlendShapeBuilder,
+    ) -> Self {
+        Self {
+            blend_shapes: f(MeshBlendShapeBuilder::new(self.blend_shapes)).build(),
+            ..self
+        }
     }
 
     pub fn build(mut self) -> Gd<ArrayMesh> {
@@ -155,6 +189,44 @@ impl MeshSurfaceBuilder {
         }
 
         self.mesh
+    }
+}
+
+pub struct MeshBlendShapeBuilder {
+    blend_shapes: Vec<VariantArray>,
+    arrays: [Variant; MeshArrayType::ENUMERATOR_COUNT],
+}
+
+impl MeshBlendShapeBuilder {
+    pub fn new(blend_shapes: Vec<VariantArray>) -> Self {
+        Self {
+            blend_shapes,
+            arrays: std::array::from_fn(|_| Variant::nil()),
+        }
+    }
+
+    #[inline]
+    fn set(mut self, array: MeshArrayType, values: Variant) -> Self {
+        self.arrays[array.ord() as usize] = values;
+        self
+    }
+
+    pub fn vertices<T: MeshArray + MeshVertexArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::VERTEX, values.to_array())
+    }
+
+    pub fn normals<T: MeshArray + MeshNormalArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::NORMAL, values.to_array())
+    }
+
+    pub fn tangents<T: MeshArray + MeshTangentArray>(self, values: T) -> Self {
+        self.set(MeshArrayType::TANGENT, values.to_array())
+    }
+
+    pub fn build(self) -> Vec<VariantArray> {
+        let mut blend_shapes = self.blend_shapes;
+        blend_shapes.push(self.arrays.to_godot());
+        blend_shapes
     }
 }
 
@@ -220,6 +292,21 @@ pub trait MeshTexCoordArray {}
 
 impl MeshTexCoordArray for PackedVector2Array {}
 impl MeshTexCoordArray for PackedVector3Array {}
+
+pub trait MeshCustomArray {}
+
+impl MeshCustomArray for PackedByteArray {}
+impl MeshCustomArray for PackedFloat32Array {}
+
+pub trait MeshBoneArray {}
+
+impl MeshBoneArray for PackedFloat32Array {}
+impl MeshBoneArray for PackedInt32Array {}
+
+pub trait MeshWeightArray {}
+
+impl MeshWeightArray for PackedFloat32Array {}
+impl MeshWeightArray for PackedFloat64Array {}
 
 pub trait MeshIndexArray {}
 

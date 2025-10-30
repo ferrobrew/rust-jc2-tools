@@ -1,7 +1,8 @@
+
 [package]
-name = "godot_jc2"
+name = "godot_utils"
 authors.workspace = true
-description = "Godot Plugin for mounting content from Just Cause 2"
+description = "Utilities for working with godot"
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
@@ -10,9 +11,6 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
-[lib]
-crate-type = ["cdylib"]
-
 [lints]
 workspace = true
 
@@ -20,13 +18,4 @@ workspace = true
 all-features = true
 
 [dependencies]
-godot_utils.workspace = true
-jc2_file_formats.workspace = true
-jc2_hashing.workspace = true
-
-async-channel.workspace = true
-binrw.workspace = true
-bytemuck.workspace = true
 godot.workspace = true
-thiserror.workspace = true
-

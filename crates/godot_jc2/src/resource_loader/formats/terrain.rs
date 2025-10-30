@@ -3,23 +3,26 @@ use std::ops::{Index, IndexMut};
 use binrw::BinRead;
 use godot::{
     classes::{
-        StandardMaterial3D, Texture2D,
+        MeshInstance3D, StandardMaterial3D, Texture2D,
         base_material_3d::{Flags, TextureFilter, TextureParam},
         mesh::PrimitiveType,
     },
     prelude::*,
 };
+use godot_utils::mesh_builder::MeshBuilder;
 use jc2_file_formats::terrain::{TerrainChunk, TerrainFile};
 
-use super::{JcResourceError, JcResourceResult, JcResourceThread, mesh_builder::MeshBuilder};
+use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, texture};
 
-pub const EXTENSION: &str = "dat";
+pub fn register() -> JcResourceFormat {
+    (GString::from("dat"), load)
+}
 
 pub fn load(
     path: GString,
     buffer: PackedByteArray,
     thread: &mut JcResourceThread,
-) -> JcResourceResult<Gd<Resource>> {
+) -> JcResourceResult<Gd<Object>> {
     let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
     match TerrainFile::read_le(&mut cursor) {
         Ok(chunk) => {
@@ -37,12 +40,14 @@ pub fn load(
                 &chunk.lods.high[0],
             );
 
-            Ok(MeshBuilder::new()
+            let mesh = MeshBuilder::new()
                 .surface(|surface| {
                     let mut material = StandardMaterial3D::new_gd();
+
                     material.set_flag(Flags::USE_TEXTURE_REPEAT, false);
                     material.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS_ANISOTROPIC);
                     material.set_texture(TextureParam::ALBEDO, &map_tile);
+
                     let vertices: PackedVector3Array = mesh
                         .vertices()
                         .iter()
@@ -88,8 +93,12 @@ pub fn load(
                         .uv1(uv1)
                         .indices(indices)
                 })
-                .build()
-                .upcast::<Resource>())
+                .build();
+
+            let mut instance = MeshInstance3D::new_alloc();
+            instance.set_mesh(&mesh);
+
+            Ok(instance.upcast::<Object>())
         }
         Err(error) => Err(JcResourceError::Binrw { path, error }),
     }
@@ -100,7 +109,7 @@ fn texture(
     buffer: &[u8],
     thread: &mut JcResourceThread,
 ) -> JcResourceResult<Gd<Texture2D>> {
-    let result = super::texture::load(path.clone(), PackedByteArray::from(buffer), thread)?;
+    let result = texture::load(path.clone(), PackedByteArray::from(buffer), thread)?;
     Ok(result.cast::<Texture2D>())
 }
 

@@ -3,15 +3,19 @@ use godot::{
     prelude::*,
 };
 
-use super::{GodotError, JcResourceError, JcResourceResult, JcResourceThread};
+use super::{
+    GodotError, JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread,
+};
 
-pub const EXTENSION: &str = "dds";
+pub fn register() -> JcResourceFormat {
+    (GString::from("dds"), load)
+}
 
 pub fn load(
     path: GString,
     buffer: PackedByteArray,
     _thread: &mut JcResourceThread,
-) -> JcResourceResult<Gd<Resource>> {
+) -> JcResourceResult<Gd<Object>> {
     let mut image = Image::new_gd();
     let error = image.load_dds_from_buffer(&buffer);
     if error != GodotError::OK {
@@ -25,5 +29,5 @@ pub fn load(
         });
     };
 
-    Ok(texture.upcast::<Resource>())
+    Ok(texture.upcast::<Object>())
 }
