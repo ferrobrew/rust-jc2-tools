@@ -21,7 +21,7 @@ use jc2_file_formats::{
     },
 };
 
-use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread};
+use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, texture};
 
 pub fn register() -> JcResourceFormat {
     (GString::from("rbm"), load)
@@ -599,14 +599,9 @@ fn create_material(
     thread: &mut JcResourceThread,
     material: &Material,
 ) -> JcResourceResult<Gd<StandardMaterial3D>> {
-    // TODO: `load_resource<T: Inherits<Resource>>() -> Gd<T>`
     let (albedo, normal) = (
-        thread
-            .create_resource(material.textures[0].to_godot())?
-            .cast::<Texture2D>(),
-        thread
-            .create_resource(material.textures[1].to_godot())?
-            .cast::<Texture2D>(),
+        load_texture(thread, &material.textures[0])?,
+        load_texture(thread, &material.textures[1])?,
     );
 
     let mut material = StandardMaterial3D::new_gd();
@@ -614,4 +609,10 @@ fn create_material(
     material.set_texture(TextureParam::NORMAL, &normal);
     material.set_feature(Feature::NORMAL_MAPPING, true);
     Ok(material)
+}
+
+fn load_texture(thread: &mut JcResourceThread, path: &str) -> JcResourceResult<Gd<Texture2D>> {
+    let path = path.to_godot();
+    let buffer = thread.get_buffer(&path)?;
+    Ok(texture::load(path, buffer, thread)?.cast::<Texture2D>())
 }
