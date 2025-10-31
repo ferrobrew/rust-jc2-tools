@@ -1,4 +1,7 @@
-use std::{collections::HashMap, thread};
+use std::{
+    collections::{HashMap, VecDeque},
+    thread,
+};
 
 use godot::{
     classes::{DirAccess, Engine, FileAccess, file_access::ModeFlags, notify::ObjectNotification},
@@ -18,7 +21,7 @@ use formats::JcResourceFormats;
 pub struct JcResourceLoader {
     base: Base<Object>,
     channel: Option<JcResourceChannel>,
-    callbacks: HashMap<GString, Vec<Callable>>,
+    callbacks: HashMap<GString, VecDeque<Callable>>,
 }
 
 #[godot_api]
@@ -59,10 +62,13 @@ impl JcResourceLoader {
     fn receive(&mut self, event: JcResourceEvent) {
         match event {
             JcResourceEvent::ResourceLoaded(path, resource) => {
-                if let Some(callbacks) = self.callbacks.remove(&path) {
-                    let args = [path.to_variant(), resource.0.to_variant()];
-                    for callback in callbacks {
-                        callback.call_deferred(&args);
+                if let Some(callbacks) = self.callbacks.get_mut(&path) {
+                    if let Some(callback) = callbacks.pop_front() {
+                        callback.call_deferred(&[path.to_variant(), resource.0.to_variant()]);
+
+                        if callbacks.is_empty() {
+                            self.callbacks.remove(&path);
+                        }
                     }
                 } else if !resource.0.instance_id().is_ref_counted() {
                     resource.0.free();
@@ -117,9 +123,9 @@ impl JcResourceLoader {
     pub fn load_resource(&mut self, path: GString, callback: Callable) {
         if self.send(JcResourceTask::LoadResource(path.clone())) {
             if let Some(callbacks) = self.callbacks.get_mut(&path) {
-                callbacks.push(callback);
+                callbacks.push_back(callback);
             } else {
-                self.callbacks.insert(path, vec![callback]);
+                self.callbacks.insert(path, [callback].into());
             }
         }
     }
