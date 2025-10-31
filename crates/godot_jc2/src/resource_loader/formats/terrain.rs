@@ -12,12 +12,12 @@ use godot::{
 use godot_utils::mesh_builder::MeshBuilder;
 use jc2_file_formats::terrain::{TerrainChunk, TerrainFile};
 
-use super::{JcResourceFormat, JcResourceError, JcResourceResult, JcResourceThread, JcTexture};
+use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, JcTexture};
 
 pub struct JcTerrain();
 
 impl JcResourceFormat for JcTerrain {
-    const EXTENSION: &str = "dat";
+    const EXTENSIONS: [&str; 1] = ["dat"];
     type Result = MeshInstance3D;
 
     fn from_buffer(

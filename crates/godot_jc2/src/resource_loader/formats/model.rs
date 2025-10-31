@@ -26,7 +26,7 @@ use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThrea
 pub struct JcModel();
 
 impl JcResourceFormat for JcModel {
-    const EXTENSION: &str = "rbm";
+    const EXTENSIONS: [&str; 1] = ["rbm"];
     type Result = MeshInstance3D;
 
     fn from_buffer(

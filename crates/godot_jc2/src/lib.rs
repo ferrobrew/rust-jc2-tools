@@ -2,6 +2,7 @@
 
 use godot::prelude::*;
 
+mod property_container;
 mod resource_loader;
 
 struct Extension;

@@ -10,6 +10,9 @@ pub use lod::JcLod;
 mod model;
 pub use model::JcModel;
 
+mod properties;
+pub use properties::JcProperties;
+
 mod terrain;
 pub use terrain::JcTerrain;
 
@@ -20,12 +23,14 @@ pub type JcResourceFormats = HashMap<GString, JcResourceFormatImpl>;
 pub type JcResourceFormatImpl =
     fn(GString, PackedByteArray, &mut JcResourceThread) -> JcResourceResult<Gd<Object>>;
 
-trait JcResourceFormat {
-    const EXTENSION: &str;
+trait JcResourceFormat<const EXTENSIONS_COUNT: usize = 1> {
+    const EXTENSIONS: [&str; EXTENSIONS_COUNT];
     type Result: GodotClass + Inherits<Object>;
 
-    fn register() -> (GString, JcResourceFormatImpl) {
-        (GString::from(Self::EXTENSION), Self::load_internal)
+    fn register(formats: &mut JcResourceFormats) {
+        for extension in Self::EXTENSIONS {
+            formats.insert(extension.into(), Self::load_internal);
+        }
     }
 
     #[inline]
@@ -55,10 +60,11 @@ trait JcResourceFormat {
 }
 
 pub fn register() -> JcResourceFormats {
-    HashMap::from([
-        JcLod::register(),
-        JcModel::register(),
-        JcTerrain::register(),
-        JcTexture::register(),
-    ])
+    let mut formats = JcResourceFormats::new();
+    JcLod::register(&mut formats);
+    JcModel::register(&mut formats);
+    JcProperties::register(&mut formats);
+    JcTerrain::register(&mut formats);
+    JcTexture::register(&mut formats);
+    formats
 }

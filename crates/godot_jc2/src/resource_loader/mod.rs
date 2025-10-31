@@ -62,7 +62,7 @@ impl JcResourceLoader {
                 if let Some(callbacks) = self.callbacks.remove(&path) {
                     let args = [path.to_variant(), resource.0.to_variant()];
                     for callback in callbacks {
-                        callback.call(&args);
+                        callback.call_deferred(&args);
                     }
                 } else if !resource.0.instance_id().is_ref_counted() {
                     resource.0.free();

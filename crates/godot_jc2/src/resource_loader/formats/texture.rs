@@ -3,12 +3,12 @@ use godot::{
     prelude::*,
 };
 
-use super::{GodotError, JcResourceFormat, JcResourceError, JcResourceResult, JcResourceThread};
+use super::{GodotError, JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread};
 
 pub struct JcTexture();
 
 impl JcResourceFormat for JcTexture {
-    const EXTENSION: &str = "dds";
+    const EXTENSIONS: [&str; 1] = ["dds"];
     type Result = ImageTexture;
 
     fn from_buffer(
