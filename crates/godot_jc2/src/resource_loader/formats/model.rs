@@ -1,7 +1,8 @@
 use godot::{
     classes::{
-        MeshInstance3D, StandardMaterial3D, Texture2D,
+        Image, ImageTexture, MeshInstance3D, StandardMaterial3D, Texture2D,
         base_material_3d::{Feature, Flags, TextureParam},
+        image::Format,
         mesh::PrimitiveType,
     },
     prelude::*,
@@ -21,7 +22,9 @@ use jc2_file_formats::{
     },
 };
 
-use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, JcTexture};
+use super::{
+    GodotError, JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, JcTexture,
+};
 
 pub struct JcModel();
 
@@ -602,8 +605,16 @@ fn create_material(
     material: &Material,
 ) -> JcResourceResult<Gd<StandardMaterial3D>> {
     let (albedo, normal) = (
-        texture(&material.textures[0], thread)?,
-        texture(&material.textures[1], thread)?,
+        texture(
+            &material.textures[0],
+            Color::from_rgb(1.0, 0.0, 1.0),
+            thread,
+        )?,
+        texture(
+            &material.textures[1],
+            Color::from_rgb(0.5, 0.5, 1.0),
+            thread,
+        )?,
     );
 
     let mut material = StandardMaterial3D::new_gd();
@@ -613,7 +624,37 @@ fn create_material(
     Ok(material)
 }
 
-fn texture(path: &str, thread: &mut JcResourceThread) -> JcResourceResult<Gd<Texture2D>> {
+fn texture(
+    path: &str,
+    fallback: Color,
+    thread: &mut JcResourceThread,
+) -> JcResourceResult<Gd<Texture2D>> {
     let path = path.to_godot();
-    Ok(JcTexture::from_path(path, thread)?.upcast::<Texture2D>())
+    JcTexture::from_path(path.clone(), thread).map_or_else(
+        |_| {
+            let mut image = Image::new_gd();
+            image.set_data(
+                1,
+                1,
+                false,
+                Format::RGBA8,
+                &PackedByteArray::from([
+                    fallback.r8(),
+                    fallback.g8(),
+                    fallback.b8(),
+                    fallback.a8(),
+                ]),
+            );
+
+            let Some(texture) = ImageTexture::create_from_image(&image) else {
+                return Err(JcResourceError::FileAccess {
+                    path,
+                    error: GodotError::FAILED,
+                });
+            };
+
+            Ok(texture.upcast::<Texture2D>())
+        },
+        |t| Ok(t.upcast::<Texture2D>()),
+    )
 }
