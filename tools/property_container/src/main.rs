@@ -23,7 +23,7 @@ fn main() -> anyhow::Result<()> {
         reader.read_exact(&mut header)?;
         reader.seek(std::io::SeekFrom::Start(0))?;
 
-        let properties: PropertyContainer = match &header {
+        let properties: Vec<PropertyContainer> = match &header {
             b"PCBB" => PropertyBlockFile::read_le(&mut reader)?.into(),
             _ => PropertyFile::read_le(&mut reader)?.into(),
         };

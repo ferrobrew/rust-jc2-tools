@@ -4,6 +4,61 @@ use jc2_hashing::HashString;
 
 #[derive(GodotClass)]
 #[class(init, base=RefCounted)]
+pub struct JcPropertyContainerCollection {
+    base: Base<RefCounted>,
+    value: Option<Vec<PropertyContainer>>,
+}
+
+impl JcPropertyContainerCollection {
+    pub fn new(value: Vec<PropertyContainer>) -> Gd<JcPropertyContainerCollection> {
+        let mut result = JcPropertyContainerCollection::new_gd();
+        result.bind_mut().value = Some(value);
+        result
+    }
+}
+
+#[godot_api]
+impl JcPropertyContainerCollection {
+    #[func]
+    pub fn get(&mut self, index: i32) -> Variant {
+        let Some(containers) = &self.value else {
+            return Variant::nil();
+        };
+
+        if index < 0 || containers.len() <= index as usize {
+            return Variant::nil();
+        }
+
+        JcPropertyContainer::new(containers[index as usize].clone()).to_variant()
+    }
+
+    #[func]
+    pub fn add(&mut self, container: Gd<JcPropertyContainer>) {
+        if let Some(container) = container.bind().value.clone() {
+            match &mut self.value {
+                Some(containers) => containers.push(container),
+                None => self.value = Some([container].into()),
+            }
+        }
+    }
+
+    #[func]
+    pub fn values(&mut self) -> Array<Gd<JcPropertyContainer>> {
+        let Some(container) = &self.value else {
+            return Array::default();
+        };
+
+        Array::from_iter(
+            container
+                .iter()
+                .cloned()
+                .map(|container| JcPropertyContainer::new(container)),
+        )
+    }
+}
+
+#[derive(GodotClass)]
+#[class(init, base=RefCounted)]
 pub struct JcPropertyContainer {
     base: Base<RefCounted>,
     value: Option<PropertyContainer>,

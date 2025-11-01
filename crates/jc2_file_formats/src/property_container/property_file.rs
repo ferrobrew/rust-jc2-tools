@@ -1,4 +1,4 @@
-use binrw::binrw;
+use binrw::{BinRead, BinWrite, binrw};
 use jc2_hashing::HashString;
 
 use crate::{
@@ -10,7 +10,42 @@ use super::PropertyValue;
 
 #[binrw]
 #[derive(Clone, Default, Debug)]
-pub struct PropertyFile(pub LengthVec<PropertyFileSection, u8>);
+pub struct PropertyFile(
+    #[br(parse_with = Self::parse)]
+    #[bw(write_with = Self::write)]
+    pub Vec<PropertyFileContainer>,
+);
+
+impl PropertyFile {
+    #[inline]
+    #[binrw::parser(reader, endian)]
+    fn parse() -> binrw::BinResult<Vec<PropertyFileContainer>> {
+        let position = reader.stream_position()?;
+        let length = reader.seek(std::io::SeekFrom::End(0))? - position;
+        reader.seek(std::io::SeekFrom::Start(position))?;
+
+        let mut result = vec![];
+        while reader.stream_position()? < length {
+            result.push(PropertyFileContainer::read_options(reader, endian, ())?);
+        }
+
+        Ok(result)
+    }
+
+    #[inline]
+    #[binrw::writer(writer, endian)]
+    fn write(value: &Vec<PropertyFileContainer>) -> binrw::BinResult<()> {
+        for container in value {
+            container.write_options(writer, endian, ())?;
+        }
+
+        Ok(())
+    }
+}
+
+#[binrw]
+#[derive(Clone, Debug)]
+pub struct PropertyFileContainer(pub LengthVec<PropertyFileSection, u8>);
 
 #[binrw]
 #[derive(Clone, Debug)]
@@ -18,13 +53,13 @@ pub enum PropertyFileSection {
     #[brw(magic = 0u16)]
     Empty(u16),
     #[brw(magic = 1u16)]
-    Container(LengthVec<(LengthString<u32>, PropertyFile), u16>),
+    Container(LengthVec<(LengthString<u32>, PropertyFileContainer), u16>),
     #[brw(magic = 2u16)]
     Value(LengthVec<(LengthString<u32>, PropertyFileValue), u16>),
     #[brw(magic = 3u16)]
     Raw(LengthVec<u8, u16>),
     #[brw(magic = 4u16)]
-    HashedContainer(LengthVec<(HashString, PropertyFile), u16>),
+    HashedContainer(LengthVec<(HashString, PropertyFileContainer), u16>),
     #[brw(magic = 5u16)]
     HashedValue(LengthVec<(HashString, PropertyFileValue), u16>),
 }

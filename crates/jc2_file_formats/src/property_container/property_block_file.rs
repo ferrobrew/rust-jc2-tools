@@ -12,40 +12,63 @@ use crate::{
 use super::PropertyValue;
 
 #[binrw]
-#[brw(magic = b"PCBB")]
 #[derive(Clone, Default, Debug)]
 pub struct PropertyBlockFile(
     #[br(parse_with = Self::parse)]
     #[bw(write_with = Self::write)]
-    pub PropertyBlockContainer,
+    pub Vec<PropertyBlockContainer>,
 );
 
 impl PropertyBlockFile {
+    const MAGIC: [u8; 4] = *b"PCBB";
     const DATA_OFFSET: u64 = 8;
 
     #[inline]
     #[binrw::parser(reader, endian)]
-    fn parse() -> binrw::BinResult<PropertyBlockContainer> {
-        reader.seek_relative(4)?;
-        Ok(PropertyBlockContainer::read_options(reader, endian, ())?)
+    fn parse() -> binrw::BinResult<Vec<PropertyBlockContainer>> {
+        let position = reader.stream_position()?;
+        let length = reader.seek(std::io::SeekFrom::End(0))? - position;
+        reader.seek(std::io::SeekFrom::Start(position))?;
+
+        let mut result = vec![];
+        let mut header = [0u8; 4];
+        while reader.stream_position()? < length {
+            reader.read_exact(header.as_mut_slice())?;
+
+            if header != Self::MAGIC {
+                return Err(binrw::Error::BadMagic {
+                    pos: reader.stream_position()?,
+                    found: Box::new(header),
+                });
+            }
+
+            result.push(PropertyBlockContainer::read_options(reader, endian, ())?);
+        }
+
+        Ok(result)
     }
 
     #[inline]
     #[binrw::writer(writer, endian)]
-    fn write(value: &PropertyBlockContainer) -> binrw::BinResult<()> {
-        // Write an initial size of zero
-        let start = writer.stream_position()?;
-        0u32.write_options(writer, endian, ())?;
-        value.write_options(writer, endian, ())?;
+    fn write(value: &Vec<PropertyBlockContainer>) -> binrw::BinResult<()> {
+        for container in value {
+            // Write magic
+            writer.write(&Self::MAGIC)?;
 
-        // Seek back to initial size
-        let end = writer.stream_position()?;
-        writer.seek(std::io::SeekFrom::Start(start))?;
+            // Write an initial size of zero
+            let start = writer.stream_position()?;
+            0u32.write_options(writer, endian, ())?;
+            container.write_options(writer, endian, ())?;
 
-        // Overwrite it with the final calcuated size
-        let size = (end - start - 4) as u32;
-        size.write_options(writer, endian, ())?;
-        writer.seek_relative(size as i64)?;
+            // Seek back to initial size
+            let end = writer.stream_position()?;
+            writer.seek(std::io::SeekFrom::Start(start))?;
+
+            // Overwrite it with the final calcuated size
+            let size = (end - start - 4) as u32;
+            size.write_options(writer, endian, ())?;
+            writer.seek_relative(size as i64)?;
+        }
 
         Ok(())
     }

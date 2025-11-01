@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use jc2_hashing::HashString;
 
-use crate::math::{Vec2, Vec3, Vec4};
+use crate::{
+    math::{Vec2, Vec3, Vec4},
+    property_container::PropertyFileContainer,
+};
 
 use super::{
     PropertyBlockContainer, PropertyBlockFile, PropertyBlockNodeValue, PropertyBlockValue,
@@ -117,9 +120,9 @@ impl<T: Sized + Into<HashMap<HashString, PropertyEntry>>> From<T> for PropertyCo
     }
 }
 
-impl From<PropertyBlockFile> for PropertyContainer {
+impl From<PropertyBlockFile> for Vec<PropertyContainer> {
     fn from(value: PropertyBlockFile) -> Self {
-        value.0.into()
+        value.0.into_iter().map(|v| v.into()).collect()
     }
 }
 
@@ -141,8 +144,14 @@ impl From<PropertyBlockContainer> for PropertyContainer {
     }
 }
 
-impl From<PropertyFile> for PropertyContainer {
+impl From<PropertyFile> for Vec<PropertyContainer> {
     fn from(value: PropertyFile) -> Self {
+        value.0.into_iter().map(|v| v.into()).collect()
+    }
+}
+
+impl From<PropertyFileContainer> for PropertyContainer {
+    fn from(value: PropertyFileContainer) -> Self {
         let mut result = HashMap::<HashString, PropertyEntry>::new();
         for section in value.0.into_iter() {
             match section {

@@ -2,15 +2,15 @@ use binrw::BinRead;
 use godot::prelude::*;
 use jc2_file_formats::property_container::{PropertyBlockFile, PropertyContainer, PropertyFile};
 
-use crate::property_container::JcPropertyContainer;
+use crate::property_container::JcPropertyContainerCollection;
 
 use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread};
 
 pub struct JcProperties();
 
-impl JcResourceFormat<2> for JcProperties {
-    const EXTENSIONS: [&str; 2] = ["bin", "bl"];
-    type Result = JcPropertyContainer;
+impl JcResourceFormat<4> for JcProperties {
+    const EXTENSIONS: [&str; 4] = ["bin", "bl", "blo", "epe"];
+    type Result = JcPropertyContainerCollection;
 
     fn from_buffer(
         path: GString,
@@ -18,13 +18,13 @@ impl JcResourceFormat<2> for JcProperties {
         _thread: &mut JcResourceThread,
     ) -> JcResourceResult<Gd<Self::Result>> {
         match read(buffer.as_slice()) {
-            Ok(container) => Ok(JcPropertyContainer::new(container.into())),
+            Ok(collection) => Ok(JcPropertyContainerCollection::new(collection.into())),
             Err(error) => Err(JcResourceError::Binrw { path, error }),
         }
     }
 }
 
-fn read(buffer: &[u8]) -> binrw::BinResult<PropertyContainer> {
+fn read(buffer: &[u8]) -> binrw::BinResult<Vec<PropertyContainer>> {
     let header = &buffer[0..4];
     let mut cursor = binrw::io::Cursor::new(buffer);
     Ok(match &header {
