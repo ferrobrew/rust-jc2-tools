@@ -10,7 +10,7 @@ use godot::{
     prelude::*,
 };
 use godot_utils::mesh_builder::MeshBuilder;
-use jc2_file_formats::terrain::{TerrainChunk, TerrainFile};
+use jc2_file_formats::terrain::{TerrainChunk, TerrainMesh};
 
 use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, JcTexture};
 
@@ -26,7 +26,7 @@ impl JcResourceFormat for JcTerrain {
         thread: &mut JcResourceThread,
     ) -> JcResourceResult<Gd<Self::Result>> {
         let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
-        match TerrainFile::read_le(&mut cursor) {
+        match TerrainChunk::read_le(&mut cursor) {
             Ok(chunk) => {
                 let map_tile = texture(&path, &chunk.textures.map_tile, thread)?;
 
@@ -39,7 +39,7 @@ impl JcResourceFormat for JcTerrain {
                             parts[length - 1].to_int() as i32,
                         )
                     },
-                    &chunk.lods.high[0],
+                    &chunk.lods.low[0],
                 );
 
                 let mesh = MeshBuilder::new()
@@ -58,7 +58,7 @@ impl JcResourceFormat for JcTerrain {
                                 const HEIGHT_SCALE: f32 = (1.0 / u16::MAX as f32) * 2200.0;
 
                                 let [x, z] = vertex.position;
-                                let height_map = |x| x as usize * 2;
+                                let height_map = |x| 2 + (x as usize * 2);
                                 let y = chunk.height_map[height_map(x) + height_map(z) * 132];
 
                                 Vector3 {
@@ -145,7 +145,7 @@ impl Default for TerrainChunkMesh {
 }
 
 impl TerrainChunkMesh {
-    pub fn new(position: Vector2i, chunk: &TerrainChunk) -> Self {
+    pub fn new(position: Vector2i, chunk: &TerrainMesh) -> Self {
         let mut result = Self::default();
 
         result.initialize();

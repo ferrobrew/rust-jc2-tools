@@ -1,5 +1,5 @@
 use clap::Parser;
-use jc2_file_formats::{BinRead, terrain::TerrainFile};
+use jc2_file_formats::{BinRead, terrain::TerrainChunk};
 
 #[derive(Parser)]
 struct Args {
@@ -14,7 +14,7 @@ fn main() -> anyhow::Result<()> {
         let file = std::fs::File::open(args.file.clone())?;
         let mut reader = std::io::BufReader::new(file);
 
-        let terrain = TerrainFile::read_le(&mut reader)?;
+        let terrain = TerrainChunk::read_le(&mut reader)?;
 
         std::fs::write(
             args.file.with_extension("normal.dds"),

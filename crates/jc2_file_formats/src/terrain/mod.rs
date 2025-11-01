@@ -5,21 +5,21 @@ use crate::common::{LengthBitVec, LengthVec};
 #[binrw]
 #[brw(magic = 12u32)]
 #[derive(Clone, Debug)]
-pub struct TerrainFile {
+pub struct TerrainChunk {
     #[brw(magic = 123u32)]
     pub height_map: [u16; 132 * 132],
     pub material_map: [u8; 132 * 132],
     #[brw(magic = 12u32)]
     pub textures: TerrainTextureData,
     #[brw(magic = 12u32)]
-    pub lods: TerrainChunkData,
+    pub lods: TerrainMeshData,
     #[brw(magic = 12u32)]
     pub zone_map: [u8; 64 * 64],
     #[brw(magic = 12u32)]
     pub magic: (),
 }
 
-impl Default for TerrainFile {
+impl Default for TerrainChunk {
     fn default() -> Self {
         Self {
             height_map: [Default::default(); 132 * 132],
@@ -44,15 +44,15 @@ pub struct TerrainTextureData {
 
 #[binrw]
 #[derive(Clone, Default, Debug)]
-pub struct TerrainChunkData {
-    pub high: [TerrainChunk; 1],
-    pub medium: [TerrainChunk; 4],
-    pub low: [TerrainChunk; 16],
+pub struct TerrainMeshData {
+    pub low: [TerrainMesh; 1],
+    pub medium: [TerrainMesh; 4],
+    pub high: [TerrainMesh; 16],
 }
 
 #[binrw]
 #[derive(Clone, Default, Debug)]
-pub struct TerrainChunk {
+pub struct TerrainMesh {
     pub triangles: LengthBitVec<u32, u32>,
     pub index_counts: [u16; 4],
 }
