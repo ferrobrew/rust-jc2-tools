@@ -7,6 +7,9 @@ use super::*;
 mod lod;
 pub use lod::JcLod;
 
+mod model_collection;
+pub use model_collection::JcModelCollection;
+
 mod model;
 pub use model::JcModel;
 
@@ -62,6 +65,7 @@ trait JcResourceFormat<const EXTENSIONS_COUNT: usize = 1> {
 pub fn register() -> JcResourceFormats {
     let mut formats = JcResourceFormats::new();
     JcLod::register(&mut formats);
+    JcModelCollection::register(&mut formats);
     JcModel::register(&mut formats);
     JcProperties::register(&mut formats);
     JcTerrain::register(&mut formats);
