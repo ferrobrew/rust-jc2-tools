@@ -57,6 +57,7 @@ impl JcResourceFormat for JcLod {
             }
 
             let mut instance = GeometryInstance3D::new_alloc();
+            instance.set_name(path.arg());
             for mesh in meshes {
                 instance.add_child(&mesh);
             }

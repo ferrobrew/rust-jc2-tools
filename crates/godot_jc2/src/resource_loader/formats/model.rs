@@ -50,6 +50,7 @@ impl JcResourceFormat for JcModel {
                 }
 
                 let mut instance = MeshInstance3D::new_alloc();
+                instance.set_name(path.arg());
                 instance.set_mesh(&mesh.build());
                 Ok(instance)
             }
