@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 use binrw::BinRead;
 use godot::{
     classes::{
-        MeshInstance3D, StandardMaterial3D, Texture2D,
+        GeometryInstance3D, MeshInstance3D, StandardMaterial3D, Texture2D,
         base_material_3d::{Flags, TextureFilter, TextureParam},
         mesh::PrimitiveType,
     },
@@ -14,11 +14,24 @@ use jc2_file_formats::terrain::{TerrainChunk, TerrainMesh};
 
 use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, JcTexture};
 
+pub const MAX_DIVISIONS: usize = 64;
+pub const MAX_POINTS: usize = MAX_DIVISIONS + 1;
+pub const MAX_VERTICES: usize = MAX_POINTS * MAX_POINTS;
+pub const MAX_QUADRANTS: usize = MAX_DIVISIONS * MAX_DIVISIONS;
+pub const MAX_TRIANGLES: usize = MAX_QUADRANTS * 2;
+pub const MAX_INDICES: usize = MAX_TRIANGLES * 3;
+pub const MAX_BUCKET_SIZE: usize = MAX_INDICES / 4;
+
+pub const CHUNK_SIZE: (f32, f32) = (512.0, 2200.0);
+pub const WIDTH_SCALE: f32 = (1f32 / MAX_DIVISIONS as f32) * CHUNK_SIZE.0;
+pub const HEIGHT_SCALE: f32 = (1.0 / u16::MAX as f32) * CHUNK_SIZE.1;
+pub const UV_SCALE: f32 = 1.0 / MAX_DIVISIONS as f32;
+
 pub struct JcTerrain();
 
 impl JcResourceFormat for JcTerrain {
     const EXTENSIONS: [&str; 1] = ["dat"];
-    type Result = MeshInstance3D;
+    type Result = GeometryInstance3D;
 
     fn from_buffer(
         path: GString,
@@ -30,75 +43,117 @@ impl JcResourceFormat for JcTerrain {
             Ok(chunk) => {
                 let map_tile = texture(&path, &chunk.textures.map_tile, thread)?;
 
-                let mesh = TerrainChunkMesh::new(
-                    {
-                        let parts = path.split("_");
-                        let length = parts.len();
-                        Vector2i::new(
-                            parts[length - 2].to_int() as i32,
-                            parts[length - 1].to_int() as i32,
-                        )
-                    },
-                    &chunk.lods.low[0],
-                );
+                let meshes = [
+                    chunk.lods.low.as_slice(),
+                    chunk.lods.medium.as_slice(),
+                    chunk.lods.high.as_slice(),
+                ];
 
-                let mesh = MeshBuilder::new()
-                    .surface(|surface| {
-                        let mut material = StandardMaterial3D::new_gd();
+                let position = {
+                    let parts = path.split("_");
+                    let length = parts.len();
+                    Vector2i::new(
+                        parts[length - 2].to_int() as i32,
+                        parts[length - 1].to_int() as i32,
+                    )
+                };
 
-                        material.set_flag(Flags::USE_TEXTURE_REPEAT, false);
-                        material.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS_ANISOTROPIC);
-                        material.set_texture(TextureParam::ALBEDO, &map_tile);
+                let mut lods = Vec::with_capacity(3);
+                for level in 0..3 {
+                    let position = Vector2i::new(position.x << level, position.y << level);
+                    let stride = 1 << level;
+                    let stride_scale = 1.0 / stride as f32;
+                    let size = 64 >> level;
 
-                        let vertices: PackedVector3Array = mesh
-                            .vertices()
-                            .iter()
-                            .map(|vertex| {
-                                const WIDTH_SCALE: f32 = (1.0 / 64.0) * 512.0;
-                                const HEIGHT_SCALE: f32 = (1.0 / u16::MAX as f32) * 2200.0;
+                    let mut lod = Vec::with_capacity(stride * stride);
+                    for z in 0..stride {
+                        for x in 0..stride {
+                            let index = x + (z * stride);
+                            let mesh = TerrainChunkMesh::new(
+                                position + Vector2i::new(x as i32, z as i32),
+                                &meshes[level][index],
+                            );
 
-                                let [x, z] = vertex.position;
-                                let height_map = |x| 2 + (x as usize * 2);
-                                let y = chunk.height_map[height_map(x) + height_map(z) * 132];
+                            let ox = (size * x) as f32;
+                            let oz = (size * z) as f32;
+                            let mesh = MeshBuilder::new()
+                                .surface(|surface| {
+                                    let mut material = StandardMaterial3D::new_gd();
+                                    material.set_flag(Flags::USE_TEXTURE_REPEAT, false);
+                                    material.set_texture_filter(
+                                        TextureFilter::LINEAR_WITH_MIPMAPS_ANISOTROPIC,
+                                    );
+                                    material.set_texture(TextureParam::ALBEDO, &map_tile);
 
-                                Vector3 {
-                                    x: x as f32 * WIDTH_SCALE,
-                                    y: y as f32 * HEIGHT_SCALE,
-                                    z: z as f32 * WIDTH_SCALE,
-                                }
-                            })
-                            .collect();
+                                    let (vertices, uv1): (PackedVector3Array, PackedVector2Array) =
+                                        mesh.vertices()
+                                            .iter()
+                                            .map(|vertex| {
+                                                let [x, z] = [
+                                                    ox + (vertex.position[0] as f32 * stride_scale),
+                                                    oz + (vertex.position[1] as f32 * stride_scale),
+                                                ];
+                                                let y = sample_height(
+                                                    &chunk.height_map,
+                                                    2.0 + x * 2.0,
+                                                    2.0 + z * 2.0,
+                                                );
 
-                        let uv1: PackedVector2Array = mesh
-                            .vertices()
-                            .iter()
-                            .map(|vertex| {
-                                const INVERSE_DIVISIONS: f32 = 1.0 / MAX_DIVISIONS as f32;
-                                Vector2 {
-                                    x: vertex.position[0] as f32 * INVERSE_DIVISIONS,
-                                    y: vertex.position[1] as f32 * INVERSE_DIVISIONS,
-                                }
-                            })
-                            .collect();
+                                                (
+                                                    Vector3 {
+                                                        x: x * WIDTH_SCALE,
+                                                        y: y * HEIGHT_SCALE,
+                                                        z: z * WIDTH_SCALE,
+                                                    },
+                                                    Vector2 {
+                                                        x: x * UV_SCALE,
+                                                        y: z * UV_SCALE,
+                                                    },
+                                                )
+                                            })
+                                            .unzip();
 
-                        let indices: PackedInt32Array = mesh
-                            .indices()
-                            .iter()
-                            .flat_map(|indices| indices.iter().rev())
-                            .map(|&index| index as i32)
-                            .collect();
+                                    let indices: PackedInt32Array = mesh
+                                        .indices()
+                                        .iter()
+                                        .flat_map(|indices| indices.iter().rev())
+                                        .map(|&index| index as i32)
+                                        .collect();
 
-                        surface
-                            .primitive_type(PrimitiveType::TRIANGLES)
-                            .material(material)
-                            .vertices(vertices)
-                            .uv1(uv1)
-                            .indices(indices)
-                    })
-                    .build();
+                                    surface
+                                        .primitive_type(PrimitiveType::TRIANGLES)
+                                        .material(material)
+                                        .vertices(vertices)
+                                        .uv1(uv1)
+                                        .indices(indices)
+                                })
+                                .build();
 
-                let mut instance = MeshInstance3D::new_alloc();
-                instance.set_mesh(&mesh);
+                            let mut instance = MeshInstance3D::new_alloc();
+                            instance.set_mesh(&mesh);
+                            lod.push(instance);
+                        }
+                    }
+
+                    lods.push(lod);
+                }
+
+                const SQRT_3: f32 = 1.7320508;
+                const BOUND_RADIUS: f32 = 512.0 * SQRT_3;
+                const RANGES: [f32; 4] = [16384.0, BOUND_RADIUS * 2.0, BOUND_RADIUS, 0.0];
+
+                let mut instance = GeometryInstance3D::new_alloc();
+                for (level, lod) in lods.iter_mut().enumerate() {
+                    let mut lod_instance = GeometryInstance3D::new_alloc();
+                    for mesh in lod.iter_mut() {
+                        mesh.set_visibility_range_end(RANGES[level] + BOUND_RADIUS * 0.25);
+                        mesh.set_visibility_range_begin(RANGES[level + 1]);
+                    }
+                    for mesh in lod.iter() {
+                        lod_instance.add_child(mesh);
+                    }
+                    instance.add_child(&lod_instance);
+                }
                 Ok(instance)
             }
             Err(error) => Err(JcResourceError::Binrw { path, error }),
@@ -115,13 +170,21 @@ fn texture(
     Ok(result.upcast::<Texture2D>())
 }
 
-pub const MAX_DIVISIONS: usize = 64;
-pub const MAX_POINTS: usize = MAX_DIVISIONS + 1;
-pub const MAX_VERTICES: usize = MAX_POINTS * MAX_POINTS;
-pub const MAX_QUADRANTS: usize = MAX_DIVISIONS * MAX_DIVISIONS;
-pub const MAX_TRIANGLES: usize = MAX_QUADRANTS * 2;
-pub const MAX_INDICES: usize = MAX_TRIANGLES * 3;
-pub const MAX_BUCKET_SIZE: usize = MAX_INDICES / 4;
+const HEIGHT_SIZE: usize = 132;
+const HEIGHT_SIZE_F32: f32 = HEIGHT_SIZE as f32;
+
+#[inline(always)]
+fn height_idx(x: usize, z: usize) -> usize {
+    x + z * HEIGHT_SIZE
+}
+
+#[inline(always)]
+fn sample_height(data: &[u16; HEIGHT_SIZE * HEIGHT_SIZE], x: f32, z: f32) -> f32 {
+    let x = x.clamp(0.0, HEIGHT_SIZE_F32 - 1.0).floor() as usize;
+    let z = z.clamp(0.0, HEIGHT_SIZE_F32 - 1.0).floor() as usize;
+
+    data[height_idx(x, z)] as f32
+}
 
 #[derive(Debug, Clone)]
 struct TerrainChunkMesh {
