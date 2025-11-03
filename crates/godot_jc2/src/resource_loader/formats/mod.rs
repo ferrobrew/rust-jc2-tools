@@ -46,15 +46,6 @@ trait JcResourceFormat<const EXTENSIONS_COUNT: usize = 1> {
         Ok(Self::from_buffer(path, buffer, thread)?.upcast())
     }
 
-    #[inline]
-    fn from_path(
-        path: GString,
-        thread: &mut JcResourceThread,
-    ) -> JcResourceResult<Gd<Self::Result>> {
-        let buffer = thread.get_buffer(&path)?;
-        Self::from_buffer(path, buffer, thread)
-    }
-
     fn from_buffer(
         path: GString,
         buffer: PackedByteArray,

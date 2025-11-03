@@ -1,8 +1,9 @@
-use godot::{classes::GeometryInstance3D, prelude::*};
-
-use super::{
-    GodotError, JcModel, JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread,
+use godot::{
+    classes::{ArrayMesh, GeometryInstance3D, MeshInstance3D},
+    prelude::*,
 };
+
+use super::{GodotError, JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread};
 
 const LOD_DISTANCES: [f32; 6] = [0.0, 10.0, 25.0, 50.0, 100.0, 500.0];
 
@@ -44,12 +45,14 @@ impl JcResourceFormat for JcLod {
 
                 if next_lod && !previous_lod.ends_with('-') {
                     let path = GString::from(previous_lod);
-                    let mut mesh = JcModel::from_path(path, thread)?;
+                    let resource = thread.create_resource(path)?.cast::<ArrayMesh>();
 
+                    let mut mesh = MeshInstance3D::new_alloc();
+                    mesh.set_mesh(&resource);
                     mesh.set_visibility_range_begin(LOD_DISTANCES[lod_level - lod_count] * factor);
                     mesh.set_visibility_range_end(LOD_DISTANCES[lod_level] * factor);
-
                     meshes.push(mesh);
+
                     lod_count = 1;
                 } else {
                     lod_count += 1;

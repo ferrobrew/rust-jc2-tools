@@ -3,9 +3,12 @@ use std::{
     thread,
 };
 
+use async_channel::TryRecvError;
 use godot::{
-    classes::{DirAccess, Engine, FileAccess, file_access::ModeFlags, notify::ObjectNotification},
-    global::Error as GodotError,
+    classes::{
+        DirAccess, Engine, FileAccess, WeakRef, file_access::ModeFlags, notify::ObjectNotification,
+    },
+    global::{Error as GodotError, weakref},
     prelude::*,
     task,
 };
@@ -199,6 +202,8 @@ struct JcResourceThread {
     archives: Vec<(ArchiveTable, Gd<FileAccess>)>,
     stream_archives: Vec<(StreamArchive, GString)>,
     formats: JcResourceFormats,
+    cache: HashMap<HashString, Gd<WeakRef>>,
+    cache_entries: Vec<(HashString, Gd<WeakRef>)>,
     events: Vec<JcResourceEvent>,
 }
 
@@ -214,6 +219,8 @@ impl JcResourceThread {
                     archives: Default::default(),
                     stream_archives: Default::default(),
                     events: Default::default(),
+                    cache: Default::default(),
+                    cache_entries: Default::default(),
                     formats: formats::register(),
                 }
                 .run(receiver, sender);
@@ -227,33 +234,76 @@ impl JcResourceThread {
         sender: async_channel::Sender<JcResourceEvent>,
     ) {
         godot_print!("JcResourceThead: thread started");
-        while let Ok(task) = receiver.recv_blocking() {
-            let result = match task {
-                JcResourceTask::MountDirectory(path) => self.mount_directory(path),
-                JcResourceTask::UnmountDirectory => self.unmount_directory(),
-                JcResourceTask::MountStreamArchive(path) => self.mount_stream_archive(path),
-                JcResourceTask::UnmountStreamArchive(path) => self.unmount_stream_archive(path),
-                JcResourceTask::LoadResource(path) => self.load_resource(path),
-                JcResourceTask::Shutdown => {
-                    break;
-                }
-            };
+        'thread: while let Ok(task) = receiver.recv_blocking() {
+            // We purge the cache once per cycle
+            for index in (0..self.cache_entries.len()).rev() {
+                let (hash, entry) = &self.cache_entries[index];
 
-            match result {
-                Ok(()) => {
-                    for event in std::mem::take(&mut self.events) {
-                        if sender.send_blocking(event).is_err() {
-                            godot_error!("JcResourceThread: failed to send event");
-                            break;
+                if entry.get_ref().is_nil() {
+                    self.cache.remove(hash);
+                    self.cache_entries.swap_remove(index);
+                }
+            }
+
+            // Process all incoming tasks
+            if self.process_task(&sender, task) {
+                break;
+            }
+
+            'receive: loop {
+                match receiver.try_recv() {
+                    Ok(task) => {
+                        if self.process_task(&sender, task) {
+                            break 'thread;
                         }
                     }
-                }
-                Err(error) => {
-                    godot_error!("{error:?}");
+                    Err(TryRecvError::Empty) => {
+                        break 'receive;
+                    }
+                    Err(TryRecvError::Closed) => {
+                        break 'thread;
+                    }
                 }
             }
         }
         godot_print!("JcResourceThead: thread stopped");
+    }
+
+    fn process_task(
+        &mut self,
+        sender: &async_channel::Sender<JcResourceEvent>,
+        task: JcResourceTask,
+    ) -> bool {
+        let mut shutdown = false;
+
+        // Handle the task
+        let result = match task {
+            JcResourceTask::MountDirectory(path) => self.mount_directory(path),
+            JcResourceTask::UnmountDirectory => self.unmount_directory(),
+            JcResourceTask::MountStreamArchive(path) => self.mount_stream_archive(path),
+            JcResourceTask::UnmountStreamArchive(path) => self.unmount_stream_archive(path),
+            JcResourceTask::LoadResource(path) => self.load_resource(path),
+            JcResourceTask::Shutdown => {
+                shutdown = true;
+                Ok(())
+            }
+        };
+
+        // Notify the user that an error has occurred
+        if let Err(error) = result {
+            godot_error!("{error:?}");
+            return shutdown;
+        }
+
+        // Send events as fast as possible
+        for event in std::mem::take(&mut self.events) {
+            if sender.try_send(event).is_err() {
+                godot_error!("JcResourceThread: failed to send event");
+                break;
+            }
+        }
+
+        return shutdown;
     }
 
     fn mount_directory(&mut self, path: GString) -> JcResourceResult<()> {
@@ -406,16 +456,34 @@ impl JcResourceThread {
     }
 
     fn create_resource(&mut self, path: GString) -> JcResourceResult<Gd<Object>> {
-        let extension = path.get_extension().to_lower();
-        let Some(load_format) = self.formats.get(&extension) else {
-            return Err(JcResourceError::FileAccess {
-                path,
-                error: GodotError::ERR_INVALID_PARAMETER,
-            });
-        };
+        let file = path.get_file().to_lower().to_string();
+        let hash = HashString::from_str(&file);
 
-        let buffer = self.get_buffer(&path)?;
-        load_format(path, buffer, self)
+        match self
+            .cache
+            .get(&hash)
+            .and_then(|entry| entry.get_ref().try_to::<Gd<Object>>().ok())
+        {
+            Some(result) => Ok(result.clone()),
+            None => {
+                let extension = path.get_extension().to_lower();
+                let Some(load_format) = self.formats.get(&extension) else {
+                    return Err(JcResourceError::FileAccess {
+                        path,
+                        error: GodotError::ERR_INVALID_PARAMETER,
+                    });
+                };
+
+                let buffer = self.get_buffer(&path)?;
+                let result = load_format(path, buffer, self)?;
+                if result.instance_id().is_ref_counted() {
+                    let weak = weakref(&result.to_variant()).to::<Gd<WeakRef>>();
+                    self.cache.insert(hash, weak.clone());
+                    self.cache_entries.push((hash, weak));
+                }
+                Ok(result)
+            }
+        }
     }
 
     fn get_buffer(&self, path: &GString) -> JcResourceResult<PackedByteArray> {

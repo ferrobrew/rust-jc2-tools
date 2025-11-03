@@ -1,6 +1,8 @@
+use std::{cell::Cell, thread::LocalKey};
+
 use godot::{
     classes::{
-        Image, ImageTexture, MeshInstance3D, StandardMaterial3D, Texture2D,
+        ArrayMesh, Image, ImageTexture, StandardMaterial3D, Texture2D,
         base_material_3d::{Feature, Flags, TextureParam},
         image::Format,
         mesh::PrimitiveType,
@@ -22,15 +24,13 @@ use jc2_file_formats::{
     },
 };
 
-use super::{
-    GodotError, JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread, JcTexture,
-};
+use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThread};
 
 pub struct JcModel();
 
 impl JcResourceFormat for JcModel {
     const EXTENSIONS: [&str; 1] = ["rbm"];
-    type Result = MeshInstance3D;
+    type Result = ArrayMesh;
 
     fn from_buffer(
         path: GString,
@@ -42,17 +42,21 @@ impl JcResourceFormat for JcModel {
             Ok(rbm) => {
                 let mut mesh = MeshBuilder::new();
                 for block in rbm.blocks.iter() {
+                    // Hack for log spam
+                    if matches!(
+                        block,
+                        RenderBlock::BillboardFoliage(_) | RenderBlock::Halo(_)
+                    ) {
+                        continue;
+                    }
+
                     let primitive_type = block.primitive_type();
                     let material = block.material(thread)?;
                     mesh = mesh.surface(|surface| {
                         block.surface(surface.primitive_type(primitive_type).material(material))
                     });
                 }
-
-                let mut instance = MeshInstance3D::new_alloc();
-                instance.set_name(path.arg());
-                instance.set_mesh(&mesh.build());
-                Ok(instance)
+                Ok(mesh.build())
             }
             Err(error) => Err(JcResourceError::Binrw { path, error }),
         }
@@ -605,17 +609,23 @@ fn create_material(
     thread: &mut JcResourceThread,
     material: &Material,
 ) -> JcResourceResult<Gd<StandardMaterial3D>> {
+    thread_local! {
+        static ALBEDO: Cell<Option<Gd<Texture2D>>> = Cell::new(fallback(Color::from_rgb(1.0, 0.0, 1.0)));
+        static NORMAL: Cell<Option<Gd<Texture2D>>> = Cell::new(fallback(Color::from_rgb(1.0, 0.0, 1.0)));
+    }
+
+    let fetch = |texture: &'static LocalKey<Cell<Option<Gd<Texture2D>>>>| {
+        if let Some(value) = texture.take() {
+            texture.set(Some(value.clone()));
+            Ok(value)
+        } else {
+            unreachable!("failed to create fallback texture")
+        }
+    };
+
     let (albedo, normal) = (
-        texture(
-            &material.textures[0],
-            Color::from_rgb(1.0, 0.0, 1.0),
-            thread,
-        )?,
-        texture(
-            &material.textures[1],
-            Color::from_rgb(0.5, 0.5, 1.0),
-            thread,
-        )?,
+        texture(&material.textures[0], || fetch(&ALBEDO), thread)?,
+        texture(&material.textures[1], || fetch(&NORMAL), thread)?,
     );
 
     let mut material = StandardMaterial3D::new_gd();
@@ -625,37 +635,28 @@ fn create_material(
     Ok(material)
 }
 
-fn texture(
+fn texture<F: FnOnce() -> JcResourceResult<Gd<Texture2D>>>(
     path: &str,
-    fallback: Color,
+    fallback: F,
     thread: &mut JcResourceThread,
 ) -> JcResourceResult<Gd<Texture2D>> {
-    let path = path.to_godot();
-    JcTexture::from_path(path.clone(), thread).map_or_else(
+    thread.create_resource(path.to_godot()).map_or_else(
         |_| {
-            let mut image = Image::new_gd();
-            image.set_data(
-                1,
-                1,
-                false,
-                Format::RGBA8,
-                &PackedByteArray::from([
-                    fallback.r8(),
-                    fallback.g8(),
-                    fallback.b8(),
-                    fallback.a8(),
-                ]),
-            );
-
-            let Some(texture) = ImageTexture::create_from_image(&image) else {
-                return Err(JcResourceError::FileAccess {
-                    path,
-                    error: GodotError::FAILED,
-                });
-            };
-
-            Ok(texture.upcast::<Texture2D>())
+            godot_warn!("Failed to texture '{path}', using fallback!");
+            fallback()
         },
-        |t| Ok(t.upcast::<Texture2D>()),
+        |t| Ok(t.cast()),
     )
+}
+
+fn fallback(color: Color) -> Option<Gd<Texture2D>> {
+    let mut image = Image::new_gd();
+    image.set_data(
+        1,
+        1,
+        false,
+        Format::RGBA8,
+        &PackedByteArray::from([color.r8(), color.g8(), color.b8(), color.a8()]),
+    );
+    ImageTexture::create_from_image(&image).map(|x| x.upcast())
 }
