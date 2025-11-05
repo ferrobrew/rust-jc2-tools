@@ -4,6 +4,9 @@ use godot::prelude::*;
 
 use super::*;
 
+mod location;
+pub use location::JcLocation;
+
 mod lod;
 pub use lod::JcLod;
 
@@ -55,6 +58,7 @@ trait JcResourceFormat<const EXTENSIONS_COUNT: usize = 1> {
 
 pub fn register() -> JcResourceFormats {
     let mut formats = JcResourceFormats::new();
+    JcLocation::register(&mut formats);
     JcLod::register(&mut formats);
     JcModelCollection::register(&mut formats);
     JcModel::register(&mut formats);

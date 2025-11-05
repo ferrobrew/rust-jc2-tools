@@ -8,8 +8,8 @@ use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThrea
 
 pub struct JcProperties();
 
-impl JcResourceFormat<4> for JcProperties {
-    const EXTENSIONS: [&str; 4] = ["bin", "bl", "blo", "epe"];
+impl JcResourceFormat<1> for JcProperties {
+    const EXTENSIONS: [&str; 1] = ["bin"];
     type Result = JcPropertyContainerCollection;
 
     fn from_buffer(

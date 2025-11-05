@@ -1,5 +1,5 @@
 use godot::{
-    classes::{ArrayMesh, GeometryInstance3D, MeshInstance3D},
+    classes::{ArrayMesh, MeshInstance3D},
     prelude::*,
 };
 
@@ -11,7 +11,7 @@ pub struct JcLod();
 
 impl JcResourceFormat for JcLod {
     const EXTENSIONS: [&str; 1] = ["lod"];
-    type Result = GeometryInstance3D;
+    type Result = Node3D;
 
     /* FORMAT:
      *  - files are only valid if they contain >= 6 lines
@@ -59,7 +59,7 @@ impl JcResourceFormat for JcLod {
                 }
             }
 
-            let mut instance = GeometryInstance3D::new_alloc();
+            let mut instance = Node3D::new_alloc();
             instance.set_name(path.arg());
             for mesh in meshes {
                 instance.add_child(&mesh);
