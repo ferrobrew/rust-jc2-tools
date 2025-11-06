@@ -81,7 +81,7 @@ fn create_objects(
             Some("CDamageableObject" | "CLandmark" | "CPlantedTree" | "CSimpleRigidObject") => {
                 match properties.get_value::<&str>("filename") {
                     None | Some("") => None,
-                    Some(path) => Some(thread.create_resource(path.into())?.cast()),
+                    Some(path) => Some(thread.create_resource_from_path(path.into())?.cast()),
                 }
             }
             None | Some(_) => None,

@@ -19,6 +19,8 @@ use thiserror::Error;
 mod formats;
 use formats::JcResourceFormats;
 
+use crate::resource_loader::formats::JcResourceFormat;
+
 #[derive(GodotClass)]
 #[class(init, base=Object)]
 pub struct JcResourceLoader {
@@ -200,7 +202,7 @@ impl Drop for JcResourceChannel {
 struct JcResourceThread {
     directory: GString,
     archives: Vec<(ArchiveTable, Gd<FileAccess>)>,
-    stream_archives: Vec<(StreamArchive, GString)>,
+    stream_archives: Vec<JcStreamArchive>,
     formats: JcResourceFormats,
     cache: HashMap<HashString, Gd<WeakRef>>,
     cache_entries: Vec<(HashString, Gd<WeakRef>)>,
@@ -352,14 +354,15 @@ impl JcResourceThread {
         if self
             .stream_archives
             .iter()
-            .find(|stream_archive| stream_archive.1 == path)
+            .find(|stream_archive| stream_archive.path == path)
             .is_some()
         {
             return Ok(());
         }
 
         let archive = self.load_stream_archive(path.clone())?;
-        self.stream_archives.push((archive, path.clone()));
+        self.stream_archives
+            .push(JcStreamArchive::new(path.clone(), archive));
         self.events
             .push(JcResourceEvent::StreamArchiveMounted(path));
 
@@ -370,7 +373,7 @@ impl JcResourceThread {
         let Some(index) = self
             .stream_archives
             .iter()
-            .position(|stream_archive| stream_archive.1 == path)
+            .position(|stream_archive| stream_archive.path == path)
         else {
             return Err(JcResourceError::FileAccess {
                 path,
@@ -385,7 +388,7 @@ impl JcResourceThread {
     }
 
     fn load_resource(&mut self, path: GString) -> JcResourceResult<()> {
-        let event = match self.create_resource(path.clone()) {
+        let event = match self.create_resource_from_path(path.clone()) {
             Ok(resource) => JcResourceEvent::ResourceLoaded(path, JcResource(resource)),
             Err(error) => JcResourceEvent::ResourceError(path, error),
         };
@@ -445,26 +448,21 @@ impl JcResourceThread {
     }
 
     fn load_stream_archive(&self, path: GString) -> JcResourceResult<StreamArchive> {
-        let buffer = self.get_buffer(&path)?;
+        let buffer = self.get_buffer_from_path(&path)?;
         let mut cursor = binrw::io::Cursor::new(buffer.as_slice());
 
-        // TODO: convert entries to Map<HashString, Entry> + Arc<Vec<GString>>?
         match StreamArchive::read(&mut cursor) {
             Ok(archive) => Ok(archive),
             Err(error) => Err(JcResourceError::Binrw { path, error }),
         }
     }
 
-    fn create_resource(&mut self, path: GString) -> JcResourceResult<Gd<Object>> {
+    fn create_resource_from_path(&mut self, path: GString) -> JcResourceResult<Gd<Object>> {
         let file = path.get_file().to_lower().to_string();
         let hash = HashString::from_str(&file);
 
-        match self
-            .cache
-            .get(&hash)
-            .and_then(|entry| entry.get_ref().try_to::<Gd<Object>>().ok())
-        {
-            Some(result) => Ok(result.clone()),
+        match self.get_resource(hash) {
+            Some(result) => Ok(result),
             None => {
                 let extension = path.get_extension().to_lower();
                 let Some(load_format) = self.formats.get(&extension) else {
@@ -474,53 +472,88 @@ impl JcResourceThread {
                     });
                 };
 
-                let buffer = self.get_buffer(&path)?;
-                let result = load_format(path, buffer, self)?;
-                if result.instance_id().is_ref_counted() {
-                    let weak = weakref(&result.to_variant()).to::<Gd<WeakRef>>();
-                    self.cache.insert(hash, weak.clone());
-                    self.cache_entries.push((hash, weak));
-                }
-                Ok(result)
+                let buffer = self.get_buffer_from_hash(hash)?;
+                let resource = load_format(path, buffer, self)?;
+                self.insert_resource(hash, &resource.clone().upcast());
+                Ok(resource)
             }
         }
     }
 
-    fn get_buffer(&self, path: &GString) -> JcResourceResult<PackedByteArray> {
-        let file = path.get_file().to_lower().to_string();
-        let result = self.stream_archives.iter().find_map(|archive| {
-            archive
-                .0
-                .entries
-                .get(&file)
-                .map(|entry| PackedByteArray::from(entry.clone()))
-        });
-
-        if let Some(buffer) = result {
-            Ok(buffer)
-        } else {
-            let hash = HashString::from_str(&file);
-            let result = self
-                .archives
-                .iter()
-                .map(|archive| (&archive.0.entries, &archive.1))
-                .find_map(|(entries, archive)| {
-                    entries.get(&hash).map(|entry| {
-                        let mut archive = archive.clone();
-                        archive.seek(entry.offset as u64);
-                        archive.get_buffer(entry.size as i64)
-                    })
-                });
-
-            if let Some(buffer) = result {
-                Ok(buffer)
-            } else {
-                Err(JcResourceError::FileAccess {
-                    path: path.clone(),
-                    error: GodotError::ERR_FILE_NOT_FOUND,
-                })
+    fn create_resource_from_hash<T: JcResourceFormat>(
+        &mut self,
+        hash: HashString,
+    ) -> JcResourceResult<Gd<T::Result>> {
+        let path = GString::from(&format!("#{}", hash.hash()));
+        match self.get_resource(hash) {
+            Some(result) => match result.try_cast::<T::Result>().ok() {
+                Some(result) => Ok(result.clone()),
+                None => Err(JcResourceError::FileAccess {
+                    path,
+                    error: GodotError::ERR_INVALID_DATA,
+                }),
+            },
+            None => {
+                let buffer = self.get_buffer_from_hash(hash)?;
+                let resource = T::from_buffer(path, buffer, self)?;
+                self.insert_resource(hash, &resource.clone().upcast());
+                Ok(resource)
             }
         }
+    }
+
+    fn get_resource(&self, hash: HashString) -> Option<Gd<Object>> {
+        self.cache
+            .get(&hash)
+            .and_then(|entry| entry.get_ref().try_to::<Gd<Object>>().ok())
+    }
+
+    fn insert_resource(&mut self, hash: HashString, resource: &Gd<Object>) {
+        if resource.instance_id().is_ref_counted() {
+            let weak = weakref(&resource.to_variant()).to::<Gd<WeakRef>>();
+            self.cache.insert(hash, weak.clone());
+            self.cache_entries.push((hash, weak));
+        }
+    }
+
+    fn get_buffer_from_path(&self, path: &GString) -> JcResourceResult<PackedByteArray> {
+        let file = path.get_file().to_lower().to_string();
+        let hash = HashString::from_str(&file);
+        match self.get_buffer(hash) {
+            Some(buffer) => Ok(buffer),
+            None => Err(JcResourceError::FileAccess {
+                path: path.clone(),
+                error: GodotError::ERR_FILE_NOT_FOUND,
+            }),
+        }
+    }
+
+    fn get_buffer_from_hash(&self, hash: HashString) -> JcResourceResult<PackedByteArray> {
+        match self.get_buffer(hash) {
+            Some(buffer) => Ok(buffer),
+            None => Err(JcResourceError::FileAccess {
+                path: GString::from(&format!("#{}", hash.hash())),
+                error: GodotError::ERR_FILE_NOT_FOUND,
+            }),
+        }
+    }
+
+    fn get_buffer(&self, hash: HashString) -> Option<PackedByteArray> {
+        self.stream_archives
+            .iter()
+            .find_map(|archive| archive.data.get(&hash).map(|entry| entry.clone()))
+            .or_else(|| {
+                self.archives
+                    .iter()
+                    .map(|archive| (&archive.0.entries, &archive.1))
+                    .find_map(|(entries, archive)| {
+                        entries.get(&hash).map(|entry| {
+                            let mut archive = archive.clone();
+                            archive.seek(entry.offset as u64);
+                            archive.get_buffer(entry.size as i64)
+                        })
+                    })
+            })
     }
 }
 
@@ -569,3 +602,24 @@ impl From<Gd<Object>> for JcResource {
 
 /// SAFETY: `Resource` is safe to create on any thread, and to send to main thread.
 unsafe impl Send for JcResource {}
+
+#[derive(Debug)]
+struct JcStreamArchive {
+    path: GString,
+    paths: Vec<GString>,
+    data: HashMap<HashString, PackedByteArray>,
+}
+
+impl JcStreamArchive {
+    fn new(path: GString, archive: StreamArchive) -> Self {
+        Self {
+            path,
+            paths: archive.entries.keys().map(GString::from).collect(),
+            data: archive
+                .entries
+                .into_iter()
+                .map(|(path, data)| (HashString::from(path), PackedByteArray::from(data)))
+                .collect(),
+        }
+    }
+}

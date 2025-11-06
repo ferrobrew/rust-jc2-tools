@@ -640,13 +640,15 @@ fn texture<F: FnOnce() -> JcResourceResult<Gd<Texture2D>>>(
     fallback: F,
     thread: &mut JcResourceThread,
 ) -> JcResourceResult<Gd<Texture2D>> {
-    thread.create_resource(path.to_godot()).map_or_else(
-        |_| {
-            godot_warn!("Failed to texture '{path}', using fallback!");
-            fallback()
-        },
-        |t| Ok(t.cast()),
-    )
+    thread
+        .create_resource_from_path(path.to_godot())
+        .map_or_else(
+            |_| {
+                godot_warn!("Failed to texture '{path}', using fallback!");
+                fallback()
+            },
+            |t| Ok(t.cast()),
+        )
 }
 
 fn fallback(color: Color) -> Option<Gd<Texture2D>> {

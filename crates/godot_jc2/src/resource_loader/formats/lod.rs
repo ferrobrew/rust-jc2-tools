@@ -45,7 +45,7 @@ impl JcResourceFormat for JcLod {
 
                 if next_lod && !previous_lod.ends_with('-') {
                     let path = GString::from(previous_lod);
-                    let resource = thread.create_resource(path)?.cast::<ArrayMesh>();
+                    let resource = thread.create_resource_from_path(path)?.cast::<ArrayMesh>();
 
                     let mut mesh = MeshInstance3D::new_alloc();
                     mesh.set_mesh(&resource);

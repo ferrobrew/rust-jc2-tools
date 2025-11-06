@@ -29,7 +29,7 @@ pub type JcResourceFormats = HashMap<GString, JcResourceFormatImpl>;
 pub type JcResourceFormatImpl =
     fn(GString, PackedByteArray, &mut JcResourceThread) -> JcResourceResult<Gd<Object>>;
 
-trait JcResourceFormat<const EXTENSIONS_COUNT: usize = 1> {
+pub trait JcResourceFormat<const EXTENSIONS_COUNT: usize = 1> {
     const EXTENSIONS: [&str; EXTENSIONS_COUNT];
     type Result: GodotClass + Inherits<Object>;
 
