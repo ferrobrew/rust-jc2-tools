@@ -71,6 +71,19 @@ impl PropertyContainer {
         })
     }
 
+    pub fn read_value<'a, T: FromPropertyValue<'a>>(
+        &'a self,
+        hash: impl Into<HashString>,
+        value: &mut T,
+    ) -> bool {
+        if let Some(property) = self.get_value(hash) {
+            *value = property;
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn values<'a>(&'a self) -> FilterPropertyContainerValues<'a, &PropertyValue> {
         self.0.values().filter_map(|entry| match entry {
             PropertyEntry::Value(value) => Some(value),
