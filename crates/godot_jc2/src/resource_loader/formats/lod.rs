@@ -61,8 +61,14 @@ impl JcResourceFormat for JcLod {
 
             let mut instance = Node3D::new_alloc();
             instance.set_name(&StringName::from(&path));
-            for mesh in meshes {
-                instance.add_child(&mesh);
+
+            for mesh in &meshes {
+                instance.add_child(mesh);
+            }
+
+            for index in 0..meshes.len().saturating_sub(1) {
+                let parent_path = meshes[index].get_path_to(&meshes[index + 1]);
+                meshes[index].set_visibility_parent(&parent_path);
             }
 
             Ok(instance)

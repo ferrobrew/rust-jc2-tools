@@ -143,6 +143,7 @@ impl JcResourceFormat for JcTerrain {
                 const RANGES: [f32; 4] = [16384.0, BOUND_RADIUS * 2.0, BOUND_RADIUS, 0.0];
 
                 let mut instance = GeometryInstance3D::new_alloc();
+
                 for (level, lod) in lods.iter_mut().enumerate() {
                     let mut lod_instance = GeometryInstance3D::new_alloc();
                     for mesh in lod.iter_mut() {
@@ -154,6 +155,21 @@ impl JcResourceFormat for JcTerrain {
                     }
                     instance.add_child(&lod_instance);
                 }
+
+                for level in (1..lods.len()).rev() {
+                    let stride = 1 << level;
+                    let parent_stride = stride >> 1;
+
+                    for index in 0..lods[level].len() {
+                        let x = index % stride;
+                        let y = index / stride;
+                        let parent = (y >> 1) * parent_stride + (x >> 1);
+                        let parent_path = lods[level][index].get_path_to(&lods[level - 1][parent]);
+
+                        lods[level][index].set_visibility_parent(&parent_path);
+                    }
+                }
+
                 Ok(instance)
             }
             Err(error) => Err(JcResourceError::Binrw { path, error }),
