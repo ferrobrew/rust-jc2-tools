@@ -644,7 +644,7 @@ fn texture<F: FnOnce() -> JcResourceResult<Gd<Texture2D>>>(
         .create_resource_from_path(path.to_godot())
         .map_or_else(
             |_| {
-                godot_warn!("Failed to texture '{path}', using fallback!");
+                godot_warn!("Failed to load texture '{path}', using fallback!");
                 fallback()
             },
             |t| Ok(t.cast()),

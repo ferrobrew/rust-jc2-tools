@@ -60,7 +60,7 @@ impl JcResourceFormat for JcLod {
             }
 
             let mut instance = Node3D::new_alloc();
-            instance.set_name(path.arg());
+            instance.set_name(&StringName::from(&path));
             for mesh in meshes {
                 instance.add_child(&mesh);
             }

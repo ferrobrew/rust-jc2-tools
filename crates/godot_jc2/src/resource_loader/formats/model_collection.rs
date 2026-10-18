@@ -30,53 +30,47 @@ impl JcResourceFormat for JcModelCollection {
 
                 let mut result = Node3D::new_alloc();
                 for (index, instance) in collection.instances().enumerate() {
-                    let model = &models[instance.model_index as usize];
-                    let name: GString = GString::from(&model.get_name());
+                    let mut model = models[instance.model_index as usize].duplicate_node();
+                    let index = GString::from(&index.to_string());
+                    let name = GString::from(&model.get_name());
 
-                    if let Some(model) = model.duplicate() {
-                        let mut model = model.cast::<Node3D>();
+                    model.set_name(&StringName::from(
+                        &GString::new().join(&[name, index].into()),
+                    ));
 
-                        let index = GString::from(&index.to_string());
-                        model.set_name(GString::new().join(&[name, index].into()).arg());
+                    let transform = &instance.transform;
+                    model.set_transform(Transform3D::from_cols(
+                        Vector3::new(transform[0], transform[1], transform[2]),
+                        Vector3::new(transform[4], transform[5], transform[6]),
+                        Vector3::new(transform[8], transform[9], transform[10]),
+                        Vector3::new(transform[12], transform[13], transform[14]),
+                    ));
 
-                        let transform = &instance.transform;
-                        model.set_transform(Transform3D::from_cols(
-                            Vector3::new(transform[0], transform[1], transform[2]),
-                            Vector3::new(transform[4], transform[5], transform[6]),
-                            Vector3::new(transform[8], transform[9], transform[10]),
-                            Vector3::new(transform[12], transform[13], transform[14]),
-                        ));
-
-                        result.add_child(&model);
-                    };
+                    result.add_child(&model);
                 }
                 for (index, instance) in collection.vegetation_instances.iter().enumerate() {
-                    let model = &vegetation[&instance.model_hash];
-                    let name: GString = GString::from(&model.get_name());
+                    let mut model = vegetation[&instance.model_hash].duplicate_node();
+                    let index = GString::from(&index.to_string());
+                    let name = GString::from(&model.get_name());
 
-                    if let Some(model) = model.duplicate() {
-                        let mut model = model.cast::<Node3D>();
+                    model.set_name(&StringName::from(
+                        &GString::new().join(&[name, index].into()),
+                    ));
 
-                        let index = GString::from(&index.to_string());
-                        model.set_name(GString::new().join(&[name, index].into()).arg());
+                    let basis =
+                        Basis::from_axis_angle(Vector3::UP, instance.yaw as f32 / u8::MAX as f32);
+                    model.set_transform(Transform3D::from_cols(
+                        basis.rows[0],
+                        basis.rows[1],
+                        basis.rows[2],
+                        Vector3::new(
+                            instance.position.x,
+                            instance.position.y,
+                            instance.position.z,
+                        ),
+                    ));
 
-                        let basis = Basis::from_axis_angle(
-                            Vector3::UP,
-                            instance.yaw as f32 / u8::MAX as f32,
-                        );
-                        model.set_transform(Transform3D::from_cols(
-                            basis.rows[0],
-                            basis.rows[1],
-                            basis.rows[2],
-                            Vector3::new(
-                                instance.position.x,
-                                instance.position.y,
-                                instance.position.z,
-                            ),
-                        ));
-
-                        result.add_child(&model);
-                    };
+                    result.add_child(&model);
                 }
                 Ok(result)
             }

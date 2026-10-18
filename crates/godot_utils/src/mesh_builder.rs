@@ -35,7 +35,7 @@ pub struct MeshSurfaceBuilder {
     primitive_type: PrimitiveType,
     material: Option<Gd<Material>>,
     arrays: [Variant; MeshArrayType::ENUMERATOR_COUNT],
-    blend_shapes: Vec<VariantArray>,
+    blend_shapes: Array<AnyArray>,
 }
 
 impl MeshSurfaceBuilder {
@@ -45,7 +45,7 @@ impl MeshSurfaceBuilder {
             primitive_type: PrimitiveType::TRIANGLES,
             material: None,
             arrays: std::array::from_fn(|_| Variant::nil()),
-            blend_shapes: vec![],
+            blend_shapes: Default::default(),
         }
     }
 
@@ -193,12 +193,12 @@ impl MeshSurfaceBuilder {
 }
 
 pub struct MeshBlendShapeBuilder {
-    blend_shapes: Vec<VariantArray>,
+    blend_shapes: Array<AnyArray>,
     arrays: [Variant; MeshArrayType::ENUMERATOR_COUNT],
 }
 
 impl MeshBlendShapeBuilder {
-    pub fn new(blend_shapes: Vec<VariantArray>) -> Self {
+    pub fn new(blend_shapes: Array<AnyArray>) -> Self {
         Self {
             blend_shapes,
             arrays: std::array::from_fn(|_| Variant::nil()),
@@ -223,9 +223,9 @@ impl MeshBlendShapeBuilder {
         self.set(MeshArrayType::TANGENT, values.to_array())
     }
 
-    pub fn build(self) -> Vec<VariantArray> {
+    pub fn build(self) -> Array<AnyArray> {
         let mut blend_shapes = self.blend_shapes;
-        blend_shapes.push(self.arrays.to_godot());
+        blend_shapes.push(self.arrays.to_godot().upcast_any_array());
         blend_shapes
     }
 }

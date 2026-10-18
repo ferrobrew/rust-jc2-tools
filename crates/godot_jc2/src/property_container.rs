@@ -3,7 +3,7 @@ use jc2_file_formats::property_container::{PropertyContainer, PropertyEntry, Pro
 use jc2_hashing::HashString;
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(tool, init, base=RefCounted)]
 pub struct JcPropertyContainerCollection {
     base: Base<RefCounted>,
     value: Option<Vec<PropertyContainer>>,
@@ -58,7 +58,7 @@ impl JcPropertyContainerCollection {
 }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(tool, init, base=RefCounted)]
 pub struct JcPropertyContainer {
     base: Base<RefCounted>,
     value: Option<PropertyContainer>,

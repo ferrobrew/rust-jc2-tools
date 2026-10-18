@@ -23,7 +23,7 @@ godot_jc2 = { path = "crates/godot_jc2", version = "0.1.0", default-features = f
 jc2_file_formats = { path = "crates/jc2_file_formats", version = "0.1.0", default-features = false }
 jc2_hashing = { path = "crates/jc2_hashing", version = "0.1.0", default-features = false }
 
-anyhow = "1.0"
+anyhow = "1.0.104"
 async-channel = "2.5"
 async-fs = "2.1"
 async-io = "2.3"
@@ -35,28 +35,29 @@ bevy_panorbit_camera = { version = "0.19", features = ["bevy_egui"] }
 bevy_save = { git = "https://github.com/perry-blueberry/bevy_save", branch = "update-to-bevy-0.14", default-features = false }
 # bevy_save = { version = "0.14", default-features = false }
 bevy-inspector-egui = { version = "0.25" }
-binrw = "0.15"
-bitflags = { version = "2.10", features = ["bytemuck"] }
-bitvec = { version = "1.0" }
-bytemuck = { version = "1.14", features = ["must_cast"] }
-clap = { version = "4.4", features = ["derive"] }
-const_for = "0.1"
-flate2 = "1.0"
+binrw = "0.15.2"
+bitflags = { version = "2.13.2", features = ["bytemuck"] }
+bitvec = { version = "1.1.1" }
+bytemuck = { version = "1.25.2", features = ["must_cast"] }
+clap = { version = "4.6.7", features = ["derive"] }
+const_for = "0.1.6"
+flate2 = "1.1.10"
 futures-io = "0.3"
 futures-lite = "2.0"
-gltf = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
-gltf-json = { git = "https://github.com/gltf-rs/gltf.git", rev = "dd6f483" }
-godot = { version = "0.4", features = ["experimental-threads"] }
-image = { version = "0.25", default-features = false }
-itertools = "0.14"
+gltf = { version = "1.4.1" }
+gltf-json = { version = "1.4.1" }
+godot = { version = "0.5.5", features = ["experimental-threads"] }
+image = { version = "0.25.10", default-features = false }
+image_dds = { version = "0.7.2" }
+itertools = "0.15.0"
 lexical-sort = "0.3"
 num-traits = "0.2"
 parking_lot = { version = "0.12", features = ["arc_lock", "send_guard"] }
-paste = "1.0"
-rgb = "0.8"
+paste = "1.0.15"
+rgb = "0.8.53"
 static_assertions = "1.1"
-texpresso = "2.0"
-thiserror = "2.0"
+texpresso = "2.0.2"
+thiserror = "2.0.21"
 
 [profile.release]
 codegen-units = 1

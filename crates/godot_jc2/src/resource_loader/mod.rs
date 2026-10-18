@@ -22,7 +22,7 @@ use formats::JcResourceFormats;
 use crate::resource_loader::formats::JcResourceFormat;
 
 #[derive(GodotClass)]
-#[class(init, base=Object)]
+#[class(tool, init, base=Object)]
 pub struct JcResourceLoader {
     base: Base<Object>,
     channel: Option<JcResourceChannel>,
@@ -69,7 +69,7 @@ impl JcResourceLoader {
             JcResourceEvent::ResourceLoaded(path, resource) => {
                 if let Some(callbacks) = self.callbacks.get_mut(&path) {
                     if let Some(callback) = callbacks.pop_front() {
-                        callback.call_deferred(&[path.to_variant(), resource.0.to_variant()]);
+                        callback.call_deferred(&[resource.0.to_variant()]);
 
                         if callbacks.is_empty() {
                             self.callbacks.remove(&path);
@@ -80,7 +80,15 @@ impl JcResourceLoader {
                 }
             }
             JcResourceEvent::ResourceError(path, error) => {
-                self.callbacks.remove(&path);
+                if let Some(callbacks) = self.callbacks.get_mut(&path) {
+                    if let Some(callback) = callbacks.pop_front() {
+                        callback.call_deferred(&[Variant::nil()]);
+
+                        if callbacks.is_empty() {
+                            self.callbacks.remove(&path);
+                        }
+                    }
+                }
                 godot_error!("{}: failed to load resource ({error}) {path}", Self::NAME);
             }
             JcResourceEvent::DirectoryMounted(path) => {
@@ -127,6 +135,17 @@ impl JcResourceLoader {
     #[func]
     pub fn load_resource(&mut self, path: GString, callback: Callable) {
         if self.send(JcResourceTask::LoadResource(path.clone())) {
+            if let Some(callbacks) = self.callbacks.get_mut(&path) {
+                callbacks.push_back(callback);
+            } else {
+                self.callbacks.insert(path, [callback].into());
+            }
+        }
+    }
+
+    #[func]
+    pub fn load_container(&mut self, path: GString, callback: Callable) {
+        if self.send(JcResourceTask::LoadContainer(path.clone())) {
             if let Some(callbacks) = self.callbacks.get_mut(&path) {
                 callbacks.push_back(callback);
             } else {
@@ -285,6 +304,7 @@ impl JcResourceThread {
             JcResourceTask::MountStreamArchive(path) => self.mount_stream_archive(path),
             JcResourceTask::UnmountStreamArchive(path) => self.unmount_stream_archive(path),
             JcResourceTask::LoadResource(path) => self.load_resource(path),
+            JcResourceTask::LoadContainer(path) => self.load_container(path),
             JcResourceTask::Shutdown => {
                 shutdown = true;
                 Ok(())
@@ -396,11 +416,59 @@ impl JcResourceThread {
         Ok(())
     }
 
+    fn load_container(&mut self, path: GString) -> JcResourceResult<()> {
+        self.mount_stream_archive(path.clone())?;
+        let event = match self
+            .stream_archives
+            .iter()
+            .find(|stream_archive| stream_archive.path == path)
+        {
+            Some(stream_archive) => {
+                let mut nodes: Vec<Gd<Node3D>> = vec![];
+                for path in stream_archive.paths.clone() {
+                    let resource =
+                        match path.get_extension().to_lower().to_ascii_buffer().as_slice() {
+                            b"blo" | b"bl" | b"epe" => Some(self.create_resource_from_path(path)),
+                            b"cgd" => Some(self.create_resource_from_path(path)),
+                            b"modelbatch" => Some(self.create_resource_from_path(path)),
+                            _ => None,
+                        };
+
+                    if let Some(node) = resource {
+                        if let Ok(object) = node {
+                            nodes.push(object.cast());
+                        } else {
+                            for node in &mut nodes {
+                                node.queue_free();
+                            }
+                            node?;
+                        }
+                    }
+                }
+                let mut result = Node3D::new_alloc();
+                for node in &nodes {
+                    result.set_name(&StringName::from(&path));
+                    result.add_child(node);
+                }
+                JcResourceEvent::ResourceLoaded(path, JcResource(result.upcast()))
+            }
+            None => JcResourceEvent::ResourceError(
+                path.clone(),
+                JcResourceError::FileAccess {
+                    path,
+                    error: GodotError::ERR_FILE_NOT_FOUND,
+                },
+            ),
+        };
+        self.events.push(event);
+        Ok(())
+    }
+
     fn load_directory(
         path: GString,
         archives: &mut Vec<(ArchiveTable, Gd<FileAccess>)>,
     ) -> JcResourceResult<()> {
-        let Some(mut directory) = DirAccess::open(&path) else {
+        let Some(directory) = DirAccess::open(&path) else {
             let error = DirAccess::get_open_error();
             return Err(JcResourceError::DirectoryAccess { path, error });
         };
@@ -576,6 +644,7 @@ enum JcResourceTask {
     MountStreamArchive(GString),
     UnmountStreamArchive(GString),
     LoadResource(GString),
+    LoadContainer(GString),
     Shutdown,
 }
 

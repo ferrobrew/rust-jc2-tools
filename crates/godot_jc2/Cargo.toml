@@ -28,5 +28,6 @@ async-channel.workspace = true
 binrw.workspace = true
 bytemuck.workspace = true
 godot.workspace = true
+image_dds.workspace = true
 thiserror.workspace = true
 
