@@ -65,6 +65,12 @@ macro_rules! hash_string_group_enum {
                 }
             }
 
+            impl Into<$crate::HashString> for $name {
+                fn into(self) -> $crate::HashString {
+                    self.to_hash()
+                }
+            }
+
             impl TryFrom<$crate::HashString> for $name {
                 type Error = &'static str;
 
