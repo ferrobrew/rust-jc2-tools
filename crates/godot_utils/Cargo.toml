@@ -18,4 +18,5 @@ workspace = true
 all-features = true
 
 [dependencies]
+bitflags.workspace = true
 godot.workspace = true

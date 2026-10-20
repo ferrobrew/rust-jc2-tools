@@ -2767,6 +2767,7 @@ dependencies = [
 name = "godot_utils"
 version = "0.1.0"
 dependencies = [
+ "bitflags 2.13.2",
  "godot",
 ]
 
