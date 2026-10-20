@@ -71,19 +71,6 @@ impl PropertyContainer {
         })
     }
 
-    pub fn read_value<'a, T: FromPropertyValue<'a>>(
-        &'a self,
-        hash: impl Into<HashString>,
-        value: &mut T,
-    ) -> bool {
-        if let Some(property) = self.get_value(hash) {
-            *value = property;
-            true
-        } else {
-            false
-        }
-    }
-
     pub fn values<'a>(&'a self) -> FilterPropertyContainerValues<'a, &PropertyValue> {
         self.0.values().filter_map(|entry| match entry {
             PropertyEntry::Value(value) => Some(value),
@@ -270,6 +257,12 @@ impl From<i32> for PropertyValue {
     }
 }
 
+impl From<bool> for PropertyValue {
+    fn from(value: bool) -> Self {
+        PropertyValue::I32(value as i32)
+    }
+}
+
 impl From<f32> for PropertyValue {
     fn from(value: f32) -> Self {
         PropertyValue::F32(value)
@@ -377,6 +370,15 @@ impl FromPropertyValue<'_> for i32 {
     fn from_property_value(value: &PropertyValue) -> Option<Self> {
         match value {
             PropertyValue::I32(value) => Some(*value),
+            _ => None,
+        }
+    }
+}
+
+impl FromPropertyValue<'_> for bool {
+    fn from_property_value(value: &PropertyValue) -> Option<Self> {
+        match value {
+            PropertyValue::I32(value) => Some(*value != 0),
             _ => None,
         }
     }
@@ -514,5 +516,25 @@ impl FromPropertyValue<'_> for Vec<f32> {
             PropertyValue::VecF32(value) => Some(value.clone()),
             _ => None,
         }
+    }
+}
+
+pub trait PropertyValueExtension<'a> {
+    fn read(&mut self, properties: &'a PropertyContainer, hash: impl Into<HashString>) -> bool;
+    fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>);
+}
+
+impl<'a, T: Into<PropertyValue> + FromPropertyValue<'a> + Clone> PropertyValueExtension<'a> for T {
+    fn read(&mut self, properties: &'a PropertyContainer, hash: impl Into<HashString>) -> bool {
+        if let Some(value) = properties.get_value(hash) {
+            *self = value;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
+        properties.insert_value(hash, self.clone());
     }
 }
