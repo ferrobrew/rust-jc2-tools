@@ -26,15 +26,14 @@ impl PropertyBlockFile {
     #[inline]
     #[binrw::parser(reader, endian)]
     fn parse() -> binrw::BinResult<Vec<PropertyBlockContainer>> {
-        let position = reader.stream_position()?;
-        let length = reader.seek(std::io::SeekFrom::End(0))? - position;
-        reader.seek(std::io::SeekFrom::Start(position))?;
+        let length = reader.seek(std::io::SeekFrom::End(0))?;
+        reader.seek(std::io::SeekFrom::Start(0))?;
 
         let mut result = vec![];
         let mut header = [0u8; 4];
         while reader.stream_position()? < length {
+            // Validate magic
             reader.read_exact(header.as_mut_slice())?;
-
             if header != Self::MAGIC {
                 return Err(binrw::Error::BadMagic {
                     pos: reader.stream_position()?,
@@ -42,7 +41,27 @@ impl PropertyBlockFile {
                 });
             }
 
+            // Fetch and calculate end position
+            let size = u32::read_options(reader, endian, ())? as u64;
+            let end_position = reader.stream_position()? + size;
+
+            // Read container
             result.push(PropertyBlockContainer::read_options(reader, endian, ())?);
+
+            // Validate final stream position
+            let stream_position = reader.stream_position()?;
+            if stream_position > end_position {
+                return Err(binrw::Error::AssertFail {
+                    pos: stream_position,
+                    message: format!(
+                        "stream_position ({stream_position}) > end_position ({end_position})"
+                    )
+                    .into(),
+                });
+            }
+
+            // Skip any remaining data
+            reader.seek(std::io::SeekFrom::Start(end_position))?;
         }
 
         Ok(result)
