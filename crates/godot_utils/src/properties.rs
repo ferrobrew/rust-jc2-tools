@@ -88,8 +88,6 @@ macro_rules! property_struct {
         impl $crate::properties::PropertyStruct for $name {
             #[inline(always)]
             fn append_property_list(&self, properties: &mut Vec<$crate::godot::register::info::PropertyInfo>) {
-                $crate::property_struct!(@base_op $has_base, self, append_property_list(properties), ());
-
                 #[allow(unused_imports)]
                 use $crate::godot::register::info::{PropertyInfo, PropertyUsageFlags, PropertyHint, PropertyHintInfo};
 
@@ -108,6 +106,8 @@ macro_rules! property_struct {
                         properties.push(info);
                     }
                 )*
+
+                $crate::property_struct!(@base_op $has_base, self, append_property_list(properties), ());
             }
 
             #[inline(always)]
