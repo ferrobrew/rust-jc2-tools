@@ -28,6 +28,10 @@ impl PropertyContainer {
         self.0.get(&hash.into())
     }
 
+    pub fn contains(&self, hash: impl Into<HashString>) -> bool {
+        self.0.contains_key(&hash.into())
+    }
+
     pub fn insert_container(
         &mut self,
         hash: impl Into<HashString>,
