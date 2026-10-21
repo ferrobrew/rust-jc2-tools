@@ -1,3 +1,4 @@
+use std::io::{Cursor, Seek};
 use std::ops::{Deref, DerefMut};
 
 use binrw::{BinRead, BinWrite, binrw};
@@ -21,7 +22,7 @@ pub struct PropertyBlockFile(
 
 impl PropertyBlockFile {
     const MAGIC: [u8; 4] = *b"PCBB";
-    const DATA_OFFSET: u64 = 8;
+    const HEADER_SIZE: usize = 8;
 
     #[inline]
     #[binrw::parser(reader, endian)]
@@ -31,37 +32,32 @@ impl PropertyBlockFile {
 
         let mut result = vec![];
         let mut header = [0u8; 4];
+        let mut scratch = vec![];
+
         while reader.stream_position()? < length {
             // Validate magic
-            reader.read_exact(header.as_mut_slice())?;
+            reader.read_exact(&mut header)?;
+
             if header != Self::MAGIC {
                 return Err(binrw::Error::BadMagic {
-                    pos: reader.stream_position()?,
+                    pos: reader.stream_position()? - 4,
                     found: Box::new(header),
                 });
             }
 
-            // Fetch and calculate end position
-            let size = u32::read_options(reader, endian, ())? as u64;
-            let end_position = reader.stream_position()? + size;
-
             // Read container
-            result.push(PropertyBlockContainer::read_options(reader, endian, ())?);
+            let size = u32::read_options(reader, endian, ())?;
+            scratch.resize(offset_to_position(size) as usize, 0u8);
+            reader.read_exact(&mut scratch[Self::HEADER_SIZE..])?;
 
-            // Validate final stream position
-            let stream_position = reader.stream_position()?;
-            if stream_position > end_position {
-                return Err(binrw::Error::AssertFail {
-                    pos: stream_position,
-                    message: format!(
-                        "stream_position ({stream_position}) > end_position ({end_position})"
-                    )
-                    .into(),
-                });
-            }
+            let mut substream = Cursor::new(&scratch);
+            substream.seek(std::io::SeekFrom::Start(Self::HEADER_SIZE as u64))?;
 
-            // Skip any remaining data
-            reader.seek(std::io::SeekFrom::Start(end_position))?;
+            result.push(PropertyBlockContainer::read_options(
+                &mut substream,
+                endian,
+                (),
+            )?);
         }
 
         Ok(result)
@@ -70,23 +66,24 @@ impl PropertyBlockFile {
     #[inline]
     #[binrw::writer(writer, endian)]
     fn write(value: &Vec<PropertyBlockContainer>) -> binrw::BinResult<()> {
+        let mut scratch = vec![];
+
         for container in value {
+            // Write container
+            scratch.resize(Self::HEADER_SIZE, 0u8);
+            let mut substream = Cursor::new(&mut scratch);
+            substream.set_position(offset_to_position(0));
+            container.write_options(&mut substream, endian, ())?;
+
             // Write magic
             writer.write(&Self::MAGIC)?;
 
-            // Write an initial size of zero
-            let start = writer.stream_position()?;
-            0u32.write_options(writer, endian, ())?;
-            container.write_options(writer, endian, ())?;
-
-            // Seek back to initial size
-            let end = writer.stream_position()?;
-            writer.seek(std::io::SeekFrom::Start(start))?;
-
-            // Overwrite it with the final calcuated size
-            let size = (end - start - 4) as u32;
+            // Write size
+            let size = position_to_offset(substream.position());
             size.write_options(writer, endian, ())?;
-            writer.seek_relative(size as i64)?;
+
+            // Copy container to stream
+            writer.write_all(&substream.get_ref()[Self::HEADER_SIZE..])?;
         }
 
         Ok(())
@@ -95,12 +92,12 @@ impl PropertyBlockFile {
 
 #[inline]
 fn offset_to_position(offset: u32) -> u64 {
-    offset as u64 + PropertyBlockFile::DATA_OFFSET
+    offset as u64 + PropertyBlockFile::HEADER_SIZE as u64
 }
 
 #[inline]
 fn position_to_offset(position: u64) -> u32 {
-    (position - PropertyBlockFile::DATA_OFFSET) as u32
+    (position - PropertyBlockFile::HEADER_SIZE as u64) as u32
 }
 
 #[binrw]
