@@ -14,7 +14,7 @@ use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThrea
 pub struct JcModelCollection();
 
 impl JcResourceFormat for JcModelCollection {
-    const EXTENSIONS: [&str; 1] = ["cgd"];
+    const EXTENSIONS: &[&str] = &["cgd"];
     type Result = Node3D;
 
     fn from_buffer(
@@ -84,12 +84,12 @@ fn load(
     vegetation: &[VegetationInstance],
     thread: &mut JcResourceThread,
 ) -> JcResourceResult<(Vec<Gd<Node3D>>, HashMap<HashString, Gd<Node3D>>)> {
-    let mut models = load_models(models, thread)?;
+    let models = load_models(models, thread)?;
     match load_vegetation(vegetation, thread) {
         Ok(vegetation) => Ok((models, vegetation)),
         Err(error) => {
-            for model in &mut models {
-                model.queue_free();
+            for model in models {
+                model.free();
             }
             Err(error)
         }
@@ -105,8 +105,8 @@ fn load_models(
         match thread.create_resource_from_path(path.as_ref().into()) {
             Ok(model) => models.push(model.cast::<Node3D>()),
             Err(error) => {
-                for model in &mut models {
-                    model.queue_free();
+                for model in models {
+                    model.free();
                 }
                 return Err(error);
             }
@@ -126,8 +126,8 @@ fn load_vegetation(
         match thread.create_resource_from_hash::<JcLod>(*hash) {
             Ok(model) => models.push(model.cast::<Node3D>()),
             Err(error) => {
-                for model in &mut models {
-                    model.queue_free();
+                for model in models {
+                    model.free();
                 }
                 return Err(error);
             }

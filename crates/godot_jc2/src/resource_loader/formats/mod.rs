@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use godot::prelude::*;
-
 use super::*;
 
 mod location;
@@ -16,6 +14,9 @@ pub use model_collection::JcModelCollection;
 mod model;
 pub use model::JcModel;
 
+mod vehicle_doll;
+pub use vehicle_doll::JcVehicleDoll;
+
 mod properties;
 pub use properties::JcProperties;
 
@@ -29,12 +30,12 @@ pub type JcResourceFormats = HashMap<GString, JcResourceFormatImpl>;
 pub type JcResourceFormatImpl =
     fn(GString, PackedByteArray, &mut JcResourceThread) -> JcResourceResult<Gd<Object>>;
 
-pub trait JcResourceFormat<const EXTENSIONS_COUNT: usize = 1> {
-    const EXTENSIONS: [&str; EXTENSIONS_COUNT];
+pub trait JcResourceFormat {
+    const EXTENSIONS: &[&str];
     type Result: GodotClass + Inherits<Object>;
 
     fn register(formats: &mut JcResourceFormats) {
-        for extension in Self::EXTENSIONS {
+        for &extension in Self::EXTENSIONS {
             formats.insert(extension.into(), Self::load_internal);
         }
     }
@@ -62,6 +63,7 @@ pub fn register() -> JcResourceFormats {
     JcLod::register(&mut formats);
     JcModelCollection::register(&mut formats);
     JcModel::register(&mut formats);
+    JcVehicleDoll::register(&mut formats);
     JcProperties::register(&mut formats);
     JcTerrain::register(&mut formats);
     JcTexture::register(&mut formats);

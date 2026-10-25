@@ -8,7 +8,7 @@ use super::{GodotError, JcResourceError, JcResourceFormat, JcResourceResult, JcR
 pub struct JcTexture();
 
 impl JcResourceFormat for JcTexture {
-    const EXTENSIONS: [&str; 1] = ["dds"];
+    const EXTENSIONS: &[&str] = &["dds"];
     type Result = ImageTexture;
 
     fn from_buffer(

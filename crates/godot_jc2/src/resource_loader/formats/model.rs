@@ -3,7 +3,9 @@ use std::{cell::Cell, thread::LocalKey};
 use godot::{
     classes::{
         ArrayMesh, Image, ImageTexture, StandardMaterial3D, Texture2D,
-        base_material_3d::{Feature, Flags, TextureParam},
+        base_material_3d::{
+            AlphaAntiAliasing, BlendMode, CullMode, Feature, Flags, TextureParam, Transparency,
+        },
         image::Format,
         mesh::PrimitiveType,
     },
@@ -16,11 +18,11 @@ use jc2_file_formats::{
         ops::{VecCross, VecDot},
     },
     render_block_model::{
-        BillboardFoliageRenderBlock, CarPaintRenderBlock, CarPaintSimpleRenderBlock,
-        DeformableWindowRenderBlock, FacadeRenderBlock, GeneralRenderBlock, HaloRenderBlock,
-        LambertRenderBlock, Material, PrimitiveType as JcPrimitiveType, RenderBlock,
-        RenderBlockModel, SkinnedGeneralRenderBlock, VegetationBarkRenderBlock,
-        VegetationFoliageRenderBlock, WindowRenderBlock,
+        BillboardFoliageRenderBlock, CarPaintFlags, CarPaintRenderBlock, CarPaintSimpleRenderBlock,
+        DeformableWindowFlags, DeformableWindowRenderBlock, FacadeRenderBlock, GeneralRenderBlock,
+        HaloRenderBlock, LambertRenderBlock, Material, PrimitiveType as JcPrimitiveType,
+        RenderBlock, RenderBlockModel, SkinnedGeneralRenderBlock, VegetationBarkRenderBlock,
+        VegetationFoliageRenderBlock, WindowFlags, WindowRenderBlock,
     },
 };
 
@@ -29,7 +31,7 @@ use super::{JcResourceError, JcResourceFormat, JcResourceResult, JcResourceThrea
 pub struct JcModel();
 
 impl JcResourceFormat for JcModel {
-    const EXTENSIONS: [&str; 1] = ["rbm"];
+    const EXTENSIONS: &[&str] = &["rbm"];
     type Result = ArrayMesh;
 
     fn from_buffer(
@@ -155,6 +157,7 @@ impl SurfaceBuilder for BillboardFoliageRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("BillboardFoliage")
             .vertices(vertices)
             .uv1(uv1)
             .uv2(uv2) // TODO: use custom data?
@@ -164,7 +167,29 @@ impl SurfaceBuilder for BillboardFoliageRenderBlock {
 
 impl SurfaceBuilder for CarPaintRenderBlock {
     fn material(&self, thread: &mut JcResourceThread) -> JcResourceResult<Gd<StandardMaterial3D>> {
-        create_material(thread, &self.material)
+        let mut material = create_material(thread, &self.material);
+
+        if let Ok(material) = &mut material {
+            let flags = self.attributes.flags;
+
+            if flags.intersects(CarPaintFlags::ALPHA_BLENDING) {
+                material.set_transparency(Transparency::ALPHA);
+                material.set_blend_mode(BlendMode::PREMULT_ALPHA);
+            }
+
+            if flags.intersects(CarPaintFlags::ALPHA_TEST) {
+                material.set_transparency(Transparency::ALPHA_HASH);
+                material.set_alpha_hash_scale(0.0);
+                material.set_alpha_antialiasing(AlphaAntiAliasing::ALPHA_TO_COVERAGE);
+                material.set_alpha_antialiasing_edge(0.5);
+            }
+
+            if flags.intersects(CarPaintFlags::NO_CULLING) {
+                material.set_cull_mode(CullMode::DISABLED);
+            }
+        }
+
+        material
     }
 
     fn surface(&self, surface: MeshSurfaceBuilder) -> MeshSurfaceBuilder {
@@ -180,6 +205,7 @@ impl SurfaceBuilder for CarPaintRenderBlock {
         // TODO: light / emissive?
 
         surface
+            .name("CarPaint")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -207,7 +233,29 @@ impl SurfaceBuilder for CarPaintRenderBlock {
 
 impl SurfaceBuilder for CarPaintSimpleRenderBlock {
     fn material(&self, thread: &mut JcResourceThread) -> JcResourceResult<Gd<StandardMaterial3D>> {
-        create_material(thread, &self.material)
+        let mut material = create_material(thread, &self.material);
+
+        if let Ok(material) = &mut material {
+            let flags = self.attributes.flags;
+
+            if flags.intersects(CarPaintFlags::ALPHA_BLENDING) {
+                material.set_transparency(Transparency::ALPHA);
+                material.set_blend_mode(BlendMode::PREMULT_ALPHA);
+            }
+
+            if flags.intersects(CarPaintFlags::ALPHA_TEST) {
+                material.set_transparency(Transparency::ALPHA_HASH);
+                material.set_alpha_hash_scale(0.0);
+                material.set_alpha_antialiasing(AlphaAntiAliasing::ALPHA_TO_COVERAGE);
+                material.set_alpha_antialiasing_edge(0.5);
+            }
+
+            if flags.intersects(CarPaintFlags::NO_CULLING) {
+                material.set_cull_mode(CullMode::DISABLED);
+            }
+        }
+
+        material
     }
 
     fn surface(&self, surface: MeshSurfaceBuilder) -> MeshSurfaceBuilder {
@@ -226,6 +274,7 @@ impl SurfaceBuilder for CarPaintSimpleRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("CarPaintSimple")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -236,7 +285,24 @@ impl SurfaceBuilder for CarPaintSimpleRenderBlock {
 
 impl SurfaceBuilder for DeformableWindowRenderBlock {
     fn material(&self, thread: &mut JcResourceThread) -> JcResourceResult<Gd<StandardMaterial3D>> {
-        create_material(thread, &self.material)
+        let mut material = create_material(thread, &self.material);
+
+        if let Ok(material) = &mut material {
+            let flags = self.attributes.flags;
+
+            let color = if flags.intersects(DeformableWindowFlags::DARK_WINDOW) {
+                Color::from_rgb(0.03, 0.09, 0.07)
+            } else {
+                Color::from_rgb(0.23, 0.32, 0.28)
+            };
+            // TODO: Window shader uses custom multiplicative blending via fresnel
+            material.set_albedo(color * 2.0);
+
+            material.set_cull_mode(CullMode::DISABLED);
+            material.set_blend_mode(BlendMode::MUL);
+        }
+
+        material
     }
 
     fn surface(&self, surface: MeshSurfaceBuilder) -> MeshSurfaceBuilder {
@@ -251,6 +317,7 @@ impl SurfaceBuilder for DeformableWindowRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("DeformableWindow")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -298,6 +365,7 @@ impl SurfaceBuilder for FacadeRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("Facade")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -337,6 +405,7 @@ impl SurfaceBuilder for GeneralRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("General")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -360,6 +429,7 @@ impl SurfaceBuilder for HaloRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("Halo")
             .vertices(vertices)
             .colors(colors)
             .uv1(uv1)
@@ -397,6 +467,7 @@ impl SurfaceBuilder for LambertRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("Lambert")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -428,6 +499,7 @@ impl SurfaceBuilder for SkinnedGeneralRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("SkinnedGeneral")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -459,6 +531,7 @@ impl SurfaceBuilder for VegetationBarkRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("VegetationBark")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -492,6 +565,7 @@ impl SurfaceBuilder for VegetationFoliageRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("VegetationFoliage")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)
@@ -504,7 +578,21 @@ impl SurfaceBuilder for VegetationFoliageRenderBlock {
 
 impl SurfaceBuilder for WindowRenderBlock {
     fn material(&self, thread: &mut JcResourceThread) -> JcResourceResult<Gd<StandardMaterial3D>> {
-        create_material(thread, &self.material)
+        let mut material = create_material(thread, &self.material);
+
+        if let Ok(material) = &mut material {
+            let flags = self.attributes.flags;
+
+            if !flags.intersects(WindowFlags::ONE_SIDED) {
+                material.set_cull_mode(CullMode::DISABLED);
+            }
+
+            // TODO: Might actually use alpha blending
+            material.set_blend_mode(BlendMode::MUL);
+            material.set_specular(self.attributes.specular_power);
+        }
+
+        material
     }
 
     fn surface(&self, surface: MeshSurfaceBuilder) -> MeshSurfaceBuilder {
@@ -521,6 +609,7 @@ impl SurfaceBuilder for WindowRenderBlock {
         let indices: PackedInt32Array = self.indices.iter().rev().collect_godot(|&i| i);
 
         surface
+            .name("Window")
             .vertices(vertices)
             .normals(normals)
             .tangents(tangents)

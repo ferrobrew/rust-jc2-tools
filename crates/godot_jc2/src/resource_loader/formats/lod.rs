@@ -10,7 +10,7 @@ const LOD_DISTANCES: [f32; 6] = [0.0, 10.0, 25.0, 50.0, 100.0, 500.0];
 pub struct JcLod();
 
 impl JcResourceFormat for JcLod {
-    const EXTENSIONS: [&str; 1] = ["lod"];
+    const EXTENSIONS: &[&str] = &["lod"];
     type Result = Node3D;
 
     /* FORMAT:

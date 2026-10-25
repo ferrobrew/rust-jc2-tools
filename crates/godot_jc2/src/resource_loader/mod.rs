@@ -12,14 +12,18 @@ use godot::{
     prelude::*,
     task,
 };
-use jc2_file_formats::archive::{ArchiveTable, StreamArchive};
+use jc2_file_formats::{
+    archive::{ArchiveTable, StreamArchive},
+    property_container::PropertyContainer,
+};
 use jc2_hashing::HashString;
 use thiserror::Error;
 
 mod formats;
 use formats::JcResourceFormats;
+mod classes;
 
-use crate::resource_loader::formats::JcResourceFormat;
+use crate::resource_loader::{classes::JcClassRegistry, formats::JcResourceFormat};
 
 #[derive(GodotClass)]
 #[class(tool, init, base=Object)]
@@ -220,6 +224,7 @@ impl Drop for JcResourceChannel {
 #[derive(Debug)]
 struct JcResourceThread {
     directory: GString,
+    class_registry: JcClassRegistry,
     archives: Vec<(ArchiveTable, Gd<FileAccess>)>,
     stream_archives: Vec<JcStreamArchive>,
     formats: JcResourceFormats,
@@ -237,6 +242,7 @@ impl JcResourceThread {
             .spawn(move || {
                 JcResourceThread {
                     directory: Default::default(),
+                    class_registry: JcClassRegistry::new(),
                     archives: Default::default(),
                     stream_archives: Default::default(),
                     events: Default::default(),
@@ -407,6 +413,39 @@ impl JcResourceThread {
         Ok(())
     }
 
+    fn import(&mut self, properties: &PropertyContainer) -> JcResourceResult<Gd<Node3D>> {
+        if let Some(class) = properties.get_value::<&str>("_class") {
+            if let Some(import) = self.class_registry.import(class) {
+                import(properties, self)
+            } else {
+                Err(JcResourceError::Import {
+                    context: class.into(),
+                    error: GodotError::ERR_CANT_RESOLVE,
+                })
+            }
+        } else {
+            Err(JcResourceError::Import {
+                context: "_class".into(),
+                error: GodotError::ERR_DOES_NOT_EXIST,
+            })
+        }
+    }
+
+    fn export(
+        &mut self,
+        node: Gd<Node3D>,
+        properties: &mut PropertyContainer,
+    ) -> JcResourceResult<()> {
+        if let Some(export) = self.class_registry.export(node.dynamic_class()) {
+            return export(node, properties, self);
+        }
+
+        Err(JcResourceError::Export {
+            context: node.get_path().to_gstring(),
+            error: GodotError::ERR_CANT_RESOLVE,
+        })
+    }
+
     fn load_resource(&mut self, path: GString) -> JcResourceResult<()> {
         let event = match self.create_resource_from_path(path.clone()) {
             Ok(resource) => JcResourceEvent::ResourceLoaded(path, JcResource(resource)),
@@ -424,33 +463,34 @@ impl JcResourceThread {
             .find(|stream_archive| stream_archive.path == path)
         {
             Some(stream_archive) => {
-                let mut nodes: Vec<Gd<Node3D>> = vec![];
+                let mut container = Node3D::new_alloc();
+                container.set_name(&StringName::from(&path.get_file().get_basename()));
+
                 for path in stream_archive.paths.clone() {
                     let resource =
                         match path.get_extension().to_lower().to_ascii_buffer().as_slice() {
                             b"blo" | b"bl" | b"epe" => Some(self.create_resource_from_path(path)),
                             b"cgd" => Some(self.create_resource_from_path(path)),
                             b"modelbatch" => Some(self.create_resource_from_path(path)),
+                            b"mvdoll" | b"vdoll" => Some(self.create_resource_from_path(path)),
                             _ => None,
                         };
 
                     if let Some(node) = resource {
-                        if let Ok(object) = node {
-                            nodes.push(object.cast());
-                        } else {
-                            for node in &mut nodes {
-                                node.queue_free();
+                        match node {
+                            Ok(object) => match object.try_cast::<Node>() {
+                                Ok(node) => container.add_child(&node),
+                                Err(object) => object.free(),
+                            },
+                            Err(err) => {
+                                container.free();
+                                return Err(err);
                             }
-                            node?;
                         }
                     }
                 }
-                let mut result = Node3D::new_alloc();
-                for node in &nodes {
-                    result.set_name(&StringName::from(&path));
-                    result.add_child(node);
-                }
-                JcResourceEvent::ResourceLoaded(path, JcResource(result.upcast()))
+
+                JcResourceEvent::ResourceLoaded(path, JcResource(container.upcast()))
             }
             None => JcResourceEvent::ResourceError(
                 path.clone(),
@@ -629,6 +669,10 @@ type JcResourceResult<T> = Result<T, JcResourceError>;
 
 #[derive(Error, Debug)]
 enum JcResourceError {
+    #[error("import error ({context:?}): {error:?}")]
+    Import { context: GString, error: GodotError },
+    #[error("export error ({context:?}): {error:?}")]
+    Export { context: GString, error: GodotError },
     #[error("directory access error ({path:?}): {error:?}")]
     DirectoryAccess { path: GString, error: GodotError },
     #[error("file access error ({path:?}): {error:?}")]

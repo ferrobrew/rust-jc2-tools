@@ -30,7 +30,7 @@ pub const UV_SCALE: f32 = 1.0 / MAX_DIVISIONS as f32;
 pub struct JcTerrain();
 
 impl JcResourceFormat for JcTerrain {
-    const EXTENSIONS: [&str; 1] = ["dat"];
+    const EXTENSIONS: &[&str] = &["dat"];
     type Result = GeometryInstance3D;
 
     fn from_buffer(
