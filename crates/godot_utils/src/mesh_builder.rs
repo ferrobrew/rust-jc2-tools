@@ -32,6 +32,7 @@ impl MeshBuilder {
 
 pub struct MeshSurfaceBuilder {
     mesh: Gd<ArrayMesh>,
+    name: Option<GString>,
     primitive_type: PrimitiveType,
     material: Option<Gd<Material>>,
     arrays: [Variant; MeshArrayType::ENUMERATOR_COUNT],
@@ -42,6 +43,7 @@ impl MeshSurfaceBuilder {
     pub fn new(mesh: Gd<ArrayMesh>) -> Self {
         Self {
             mesh,
+            name: None,
             primitive_type: PrimitiveType::TRIANGLES,
             material: None,
             arrays: std::array::from_fn(|_| Variant::nil()),
@@ -58,6 +60,11 @@ impl MeshSurfaceBuilder {
     #[inline]
     fn get(&self, array: MeshArrayType) -> &Variant {
         &self.arrays[array.ord() as usize]
+    }
+
+    pub fn name(mut self, name: &str) -> Self {
+        self.name = Some(GString::from(name));
+        self
     }
 
     pub fn primitive_type(mut self, primitive_type: PrimitiveType) -> Self {
@@ -176,15 +183,19 @@ impl MeshSurfaceBuilder {
         if !self.get(MeshArrayType::INDEX).is_nil() {
             flags |= ArrayFormat::INDEX;
         }
-
         self.mesh
             .add_surface_from_arrays_ex(self.primitive_type, &self.arrays.to_godot())
             .blend_shapes(&self.blend_shapes.to_godot())
             .flags(flags)
             .done();
 
+        let surface_index = self.mesh.get_surface_count() - 1;
+
+        if let Some(name) = &self.name {
+            self.mesh.surface_set_name(surface_index, name);
+        }
+
         if let Some(material) = self.material {
-            let surface_index = self.mesh.get_surface_count() - 1;
             self.mesh.surface_set_material(surface_index, &material);
         }
 
