@@ -33,7 +33,7 @@ pub trait PropertyStruct {
         properties: &mut Vec<crate::godot::register::info::PropertyInfo>,
     );
     fn get_property(&self, property: &[char]) -> Option<Variant>;
-    fn set_property(&mut self, property: &[char], value: &Variant) -> bool;
+    fn set_property(&mut self, property: &[char], value: &Variant) -> (bool, bool);
 }
 
 #[macro_export]
@@ -78,9 +78,10 @@ macro_rules! property_struct {
     (
         @impl $name:ident, $has_base:tt,
         $(
+            $(#[update_gizmos($update_gizmos:literal)])?
             $(#[group($group_name:literal$(, $group_prefix:literal)?)])?
             $(#[subgroup($subgroup_name:literal$(, $subgroup_prefix:literal)?)])?
-            $(#[usage($($usage_flag:ident)|*$(|)?)])?
+            $(#[usage($($usage:ident)|*$(|)?)])?
             $(#[hint($hint_kind:ident$(, $hint_string:literal)?)])?
             $field_vis:vis $field:ident: $ty:ty,
         )*
@@ -97,7 +98,7 @@ macro_rules! property_struct {
                         $(properties.push(PropertyInfo::new_subgroup($subgroup_name, $crate::property_struct!(@optional $($subgroup_prefix)? "")));)?
 
                         let mut info = PropertyInfo::new_export::<$ty>(stringify!($field));
-                        $(info.usage = $(PropertyUsageFlags::$usage_flag |)+ PropertyUsageFlags::NONE;)?
+                        $(info.usage = $(PropertyUsageFlags::$usage |)+ PropertyUsageFlags::NONE;)?
                         $(info = info.with_hint_info(PropertyHintInfo {
                             hint: PropertyHint::$hint_kind,
                             hint_string: $crate::property_struct!(@optional $($hint_string)? "").into(),
@@ -127,7 +128,7 @@ macro_rules! property_struct {
             }
 
             #[inline(always)]
-            fn set_property(&mut self, property: &[char], value: &$crate::godot::builtin::Variant) -> bool {
+            fn set_property(&mut self, property: &[char], value: &$crate::godot::builtin::Variant) -> (bool, bool) {
                 $(
                     #[allow(non_upper_case_globals)]
                     const $field: u64 = $crate::properties::hash_str(stringify!($field));
@@ -137,10 +138,10 @@ macro_rules! property_struct {
                     $(
                         #[allow(non_upper_case_globals)]
                         $field => {
-                            if let Ok(converted) = value.try_to() { self.$field = converted; true } else { false }
+                            if let Ok(converted) = value.try_to() { self.$field = converted; (true, $crate::property_struct!(@optional $($update_gizmos)? false)) } else { (false, false) }
                         },
                     )*
-                    _ => $crate::property_struct!(@base_op $has_base, self, set_property(property, value), false),
+                    _ => $crate::property_struct!(@base_op $has_base, self, set_property(property, value), (false, false)),
                 }
             }
         }
