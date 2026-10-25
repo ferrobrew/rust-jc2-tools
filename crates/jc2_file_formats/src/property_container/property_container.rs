@@ -214,7 +214,7 @@ pub enum PropertyValue {
     Vec3(Vec3<f32>),
     Vec4(Vec4<f32>),
     Mat3x3([f32; 9]),
-    Mat3x4([f32; 12]),
+    Mat4x4([f32; 16]),
     VecI32(Vec<i32>),
     VecF32(Vec<f32>),
 }
@@ -223,16 +223,16 @@ impl From<PropertyBlockValue> for PropertyValue {
     fn from(value: PropertyBlockValue) -> Self {
         match value {
             PropertyBlockValue::Empty => Self::Empty,
-            PropertyBlockValue::I32(value) => Self::I32(value),
-            PropertyBlockValue::F32(value) => Self::F32(value),
-            PropertyBlockValue::String(value) => Self::String(value.0.value),
-            PropertyBlockValue::Vec2(value) => Self::Vec2(value.0),
-            PropertyBlockValue::Vec3(value) => Self::Vec3(value.0),
-            PropertyBlockValue::Vec4(value) => Self::Vec4(value.0),
-            PropertyBlockValue::Mat3x3(value) => Self::Mat3x3(value.0),
-            PropertyBlockValue::Mat3x4(value) => Self::Mat3x4(value.0),
-            PropertyBlockValue::VecI32(value) => Self::VecI32(value.0.value),
-            PropertyBlockValue::VecF32(value) => Self::VecF32(value.0.value),
+            PropertyBlockValue::I32(value) => value.into(),
+            PropertyBlockValue::F32(value) => value.into(),
+            PropertyBlockValue::String(value) => value.0.value.into(),
+            PropertyBlockValue::Vec2(value) => value.0.into(),
+            PropertyBlockValue::Vec3(value) => value.0.into(),
+            PropertyBlockValue::Vec4(value) => value.0.into(),
+            PropertyBlockValue::Mat3x3(value) => value.0.into(),
+            PropertyBlockValue::Mat4x4(value) => value.0.into(),
+            PropertyBlockValue::VecI32(value) => value.0.value.into(),
+            PropertyBlockValue::VecF32(value) => value.0.value.into(),
         }
     }
 }
@@ -241,16 +241,16 @@ impl From<PropertyFileValue> for PropertyValue {
     fn from(value: PropertyFileValue) -> Self {
         match value {
             PropertyFileValue::Empty => Self::Empty,
-            PropertyFileValue::I32(value) => Self::I32(value),
-            PropertyFileValue::F32(value) => Self::F32(value),
-            PropertyFileValue::String(value) => Self::String(value.value),
-            PropertyFileValue::Vec2(value) => Self::Vec2(value),
-            PropertyFileValue::Vec3(value) => Self::Vec3(value),
-            PropertyFileValue::Vec4(value) => Self::Vec4(value),
-            PropertyFileValue::Mat3x3(value) => Self::Mat3x3(value),
-            PropertyFileValue::Mat3x4(value) => Self::Mat3x4(value),
-            PropertyFileValue::VecI32(value) => Self::VecI32(value.value),
-            PropertyFileValue::VecF32(value) => Self::VecF32(value.value),
+            PropertyFileValue::I32(value) => value.into(),
+            PropertyFileValue::F32(value) => value.into(),
+            PropertyFileValue::String(value) => value.value.into(),
+            PropertyFileValue::Vec2(value) => value.into(),
+            PropertyFileValue::Vec3(value) => value.into(),
+            PropertyFileValue::Vec4(value) => value.into(),
+            PropertyFileValue::Mat3x3(value) => value.into(),
+            PropertyFileValue::Mat3x4(value) => value.into(),
+            PropertyFileValue::VecI32(value) => value.value.into(),
+            PropertyFileValue::VecF32(value) => value.value.into(),
         }
     }
 }
@@ -329,7 +329,18 @@ impl From<[f32; 9]> for PropertyValue {
 
 impl From<[f32; 12]> for PropertyValue {
     fn from(value: [f32; 12]) -> Self {
-        PropertyValue::Mat3x4(value)
+        PropertyValue::Mat4x4([
+            value[0], value[1], value[2], 0.0, // Right
+            value[3], value[4], value[5], 0.0, // Up
+            value[6], value[7], value[8], 0.0, // Forward
+            value[9], value[10], value[11], 1.0, // Translation
+        ])
+    }
+}
+
+impl From<[f32; 16]> for PropertyValue {
+    fn from(value: [f32; 16]) -> Self {
+        PropertyValue::Mat4x4(value)
     }
 }
 
@@ -481,7 +492,21 @@ impl FromPropertyValue<'_> for [f32; 9] {
 impl FromPropertyValue<'_> for [f32; 12] {
     fn from_property_value(value: &PropertyValue) -> Option<Self> {
         match value {
-            PropertyValue::Mat3x4(value) => Some(*value),
+            PropertyValue::Mat4x4(value) => Some([
+                value[0], value[1], value[2], // Right
+                value[4], value[5], value[6], // Up
+                value[8], value[9], value[10], // Forward
+                value[12], value[13], value[14], // Translation
+            ]),
+            _ => None,
+        }
+    }
+}
+
+impl FromPropertyValue<'_> for [f32; 16] {
+    fn from_property_value(value: &PropertyValue) -> Option<Self> {
+        match value {
+            PropertyValue::Mat4x4(value) => Some(*value),
             _ => None,
         }
     }

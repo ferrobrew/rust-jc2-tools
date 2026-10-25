@@ -109,7 +109,12 @@ impl From<PropertyValue> for PropertyFileValue {
             PropertyValue::Vec3(value) => Self::Vec3(value),
             PropertyValue::Vec4(value) => Self::Vec4(value),
             PropertyValue::Mat3x3(value) => Self::Mat3x3(value),
-            PropertyValue::Mat3x4(value) => Self::Mat3x4(value),
+            PropertyValue::Mat4x4(value) => Self::Mat3x4([
+                value[0], value[1], value[2], // Right
+                value[4], value[5], value[6], // Up
+                value[8], value[9], value[10], // Forward
+                value[12], value[13], value[14], // Translation
+            ]),
             PropertyValue::VecI32(value) => Self::VecI32(value.into()),
             PropertyValue::VecF32(value) => Self::VecF32(value.into()),
         }

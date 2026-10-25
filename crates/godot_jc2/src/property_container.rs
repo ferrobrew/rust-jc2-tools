@@ -101,11 +101,11 @@ impl JcPropertyContainer {
                     Vector3::new(value[3], value[4], value[5]),
                     Vector3::new(value[6], value[7], value[8]),
                 )),
-                PropertyValue::Mat3x4(value) => Variant::from(Transform3D::from_cols(
+                PropertyValue::Mat4x4(value) => Variant::from(Transform3D::from_cols(
                     Vector3::new(value[0], value[1], value[2]),
-                    Vector3::new(value[3], value[4], value[5]),
-                    Vector3::new(value[6], value[7], value[8]),
-                    Vector3::new(value[9], value[10], value[11]),
+                    Vector3::new(value[4], value[5], value[6]),
+                    Vector3::new(value[8], value[9], value[10]),
+                    Vector3::new(value[12], value[13], value[14]),
                 )),
                 PropertyValue::VecI32(value) => Variant::from(PackedInt32Array::from(value)),
                 PropertyValue::VecF32(value) => Variant::from(PackedFloat32Array::from(value)),
@@ -137,7 +137,7 @@ impl JcPropertyContainer {
                     .as_ref()
                     .map(|container| PropertyEntry::Container(container.clone()))
             }),
-            VariantType::BOOL => some(value, |value: bool| (value as i32).into()),
+            VariantType::BOOL => some(value, |value: bool| value.into()),
             VariantType::INT => some(value, |value: i32| value.into()),
             VariantType::FLOAT => some(value, |value: f32| value.into()),
             VariantType::STRING => some(value, |value: GString| value.to_string().into()),

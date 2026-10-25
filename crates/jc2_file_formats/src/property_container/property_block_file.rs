@@ -311,7 +311,7 @@ pub enum PropertyBlockValue {
     #[brw(magic = 7u32)]
     Mat3x3(PropertyBlockPointer<[f32; 9]>),
     #[brw(magic = 8u32)]
-    Mat3x4(PropertyBlockPointer<[f32; 12]>),
+    Mat4x4(PropertyBlockPointer<[f32; 16]>),
     #[brw(magic = 9u32)]
     VecI32(PropertyBlockPointer<LengthVec<i32, u32, true>>),
     #[brw(magic = 10u32)]
@@ -329,7 +329,7 @@ impl From<PropertyValue> for PropertyBlockValue {
             PropertyValue::Vec3(value) => Self::Vec3(value.into()),
             PropertyValue::Vec4(value) => Self::Vec4(value.into()),
             PropertyValue::Mat3x3(value) => Self::Mat3x3(value.into()),
-            PropertyValue::Mat3x4(value) => Self::Mat3x4(value.into()),
+            PropertyValue::Mat4x4(value) => Self::Mat4x4(value.into()),
             PropertyValue::VecI32(value) => Self::VecI32(value.into()),
             PropertyValue::VecF32(value) => Self::VecF32(value.into()),
         }
