@@ -15,7 +15,7 @@ jc_property_struct! {
     pub struct JcAiCoverNodeCornerData {
         #[group("AI Cover Node (Corner)")]
         _object_id: i32,
-        points: PackedVector3Array,
+        points: PackedVector4Array,
         use_left_stretch: bool = true,
         left_collision_adjustment: f32,
         use_right_stretch: bool = true,
@@ -34,7 +34,7 @@ jc_property_struct! {
     pub struct JcAiCoverNodeFireLineData {
         #[group("AI Cover Node (Fire Line)")]
         _object_id: i32,
-        points: PackedVector3Array,
+        points: PackedVector4Array,
         collision_adjustment: f32,
     }
 }

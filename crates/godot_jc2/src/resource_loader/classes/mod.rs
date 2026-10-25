@@ -352,6 +352,21 @@ trait GodotPropertyValueExtension {
     fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>);
 }
 
+impl GodotPropertyValueExtension for GString {
+    fn read(&mut self, properties: &PropertyContainer, hash: impl Into<HashString>) -> bool {
+        if let Some(property) = properties.get_value::<&str>(hash) {
+            *self = GString::from(property);
+            true
+        } else {
+            false
+        }
+    }
+
+    fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
+        properties.insert(hash, self.to_string().as_str());
+    }
+}
+
 impl GodotPropertyValueExtension for Transform3D {
     fn read(&mut self, properties: &PropertyContainer, hash: impl Into<HashString>) -> bool {
         let hash = hash.into();
@@ -385,58 +400,95 @@ impl GodotPropertyValueExtension for Transform3D {
     }
 }
 
-impl GodotPropertyValueExtension for PackedVector3Array {
-    fn read(&mut self, properties: &PropertyContainer, hash: impl Into<HashString>) -> bool {
-        match properties.get(hash) {
-            Some(PropertyEntry::Value(PropertyValue::VecF32(value))) => {
-                self.clear();
-                for i in 0..value.len() / 3 {
-                    self.push(Vector3::new(value[i + 0], value[i + 1], value[i + 2]))
+macro_rules! impl_packed_scalar_array {
+    ($array:ty, $variant:ident) => {
+        impl GodotPropertyValueExtension for $array {
+            fn read(
+                &mut self,
+                properties: &PropertyContainer,
+                hash: impl Into<HashString>,
+            ) -> bool {
+                match properties.get(hash) {
+                    Some(PropertyEntry::Value(PropertyValue::$variant(value))) => {
+                        *self = <$array>::from(value.as_slice());
+                        true
+                    }
+                    _ => false,
                 }
-                true
             }
-            _ => false,
-        }
-    }
 
-    fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
-        let mut value = vec![];
-        for vector in self.as_slice() {
-            value.push(vector.x);
-            value.push(vector.y);
-            value.push(vector.z);
-        }
-        properties.insert(hash, value);
-    }
-}
-
-impl GodotPropertyValueExtension for Vector3 {
-    fn read(&mut self, properties: &PropertyContainer, hash: impl Into<HashString>) -> bool {
-        match properties.get(hash) {
-            Some(PropertyEntry::Value(PropertyValue::Vec3(value))) => {
-                *self = Vector3::new(value.x, value.y, value.z);
-                true
+            fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
+                properties.insert(hash, self.as_slice().to_vec());
             }
-            _ => false,
         }
-    }
-
-    fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
-        properties.insert(hash, [self.x, self.y, self.z])
-    }
+    };
 }
 
-impl GodotPropertyValueExtension for GString {
-    fn read(&mut self, properties: &PropertyContainer, hash: impl Into<HashString>) -> bool {
-        if let Some(property) = properties.get_value::<&str>(hash) {
-            *self = GString::from(property);
-            true
-        } else {
-            false
-        }
-    }
+impl_packed_scalar_array!(PackedFloat32Array, VecF32);
+impl_packed_scalar_array!(PackedInt32Array, VecI32);
 
-    fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
-        properties.insert(hash, self.to_string().as_str());
-    }
+macro_rules! impl_packed_vector_array {
+    ($array:ty, $vector:ty, $count:literal, [$($field:ident),+]) => {
+        impl GodotPropertyValueExtension for $array {
+            fn read(
+                &mut self,
+                properties: &PropertyContainer,
+                hash: impl Into<HashString>,
+            ) -> bool {
+                match properties.get(hash) {
+                    Some(PropertyEntry::Value(PropertyValue::VecF32(value))) => {
+                        *self = value
+                            .as_chunks::<$count>()
+                            .0
+                            .iter()
+                            .map(|&[$($field),+]| <$vector>::new($($field),+))
+                            .collect();
+                        true
+                    }
+                    _ => false,
+                }
+            }
+
+            fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
+                let value: Vec<f32> = self
+                    .as_slice()
+                    .iter()
+                    .flat_map(|vector| [$(vector.$field),+])
+                    .collect();
+                properties.insert(hash, value);
+            }
+        }
+    };
 }
+
+impl_packed_vector_array!(PackedVector2Array, Vector2, 2, [x, y]);
+impl_packed_vector_array!(PackedVector3Array, Vector3, 3, [x, y, z]);
+impl_packed_vector_array!(PackedVector4Array, Vector4, 4, [x, y, z, w]);
+
+macro_rules! impl_vector {
+    ($vector:ty, $variant:ident, [$($field:ident),+]) => {
+        impl GodotPropertyValueExtension for $vector {
+            fn read(
+                &mut self,
+                properties: &PropertyContainer,
+                hash: impl Into<HashString>,
+            ) -> bool {
+                match properties.get(hash) {
+                    Some(PropertyEntry::Value(PropertyValue::$variant(value))) => {
+                        *self = <$vector>::new($(value.$field),+);
+                        true
+                    }
+                    _ => false,
+                }
+            }
+
+            fn write(&self, properties: &mut PropertyContainer, hash: impl Into<HashString>) {
+                properties.insert(hash, [$(self.$field),+]);
+            }
+        }
+    };
+}
+
+impl_vector!(Vector2, Vec2, [x, y]);
+impl_vector!(Vector3, Vec3, [x, y, z]);
+impl_vector!(Vector4, Vec4, [x, y, z, w]);
